@@ -1,0 +1,56 @@
+.SUFFIXES:
+.SUFFIXES: .o .f90
+
+EXE = /nas01/depts/ie/cempd/apps/RLINE/v1_2/RLINEv1_2.ifort.x
+FC=ifort
+FFLAGS = -O3 -traceback
+LIB=
+INC=
+MODULES = \
+ Data_Structures.o \
+ Line_Source_Data.o \
+ RLINE_Main.o \
+ Read_Line_Source_Inputs.o \
+ Read_Met_Inputs.o \
+ Read_Receptors.o \
+ Read_Sources.o \
+ Compute_File_Size.o \
+ Create_Exp_Table.o \
+ Expx.o \
+ Fill_Met.o \
+ Compute_Met.o \
+ Translate_Rotate.o \
+ Numerical_Line_Source.o \
+ Point_Conc.o \
+ Meander.o \
+ Polyinterp.o \
+ Sigmay.o \
+ Sigmaz.o \
+ MOST_Wind.o \
+ Effective_Wind.o \
+ Analytical_Line_Source.o \
+ Analytical_Line_Parallel.o \
+ Barrier_Displacement.o \
+ Depressed_Displacement.o \
+ Write_Hourly_All.o \
+ Write_Hourly_by_Month.o \
+ Write_Daily_Ave.o \
+ Deallocate_arrays.o \
+
+OBJS = \
+
+all:
+	@$(MAKE) $(MODULES)
+	@$(MAKE) $(EXE)
+
+$(EXE): $(OBJS)
+	$(FC) $(FFLAGS) -o $(EXE) $(OBJS) $(MODULES) $(LIB) $(INC)
+
+$(OBJS): $(MODULES)
+
+.f90.o:
+	$(FC) $(FFLAGS) $(LIB) $(INC) -c $<
+
+clean:
+	rm -f *.o *.mod $(EXE)
+

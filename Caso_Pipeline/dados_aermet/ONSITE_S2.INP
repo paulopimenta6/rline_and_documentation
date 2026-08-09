@@ -1,0 +1,30 @@
+JOB
+      REPORT      ONSITE_S2_REPORT.RPT
+      MESSAGES    ONSITE_S2_MESSAGE.TXT
+
+ONSITE
+    QAOUT          ONSITE_QAOUT.TXT
+
+METPREP
+      OUTPUT      ONSITE.SFC
+      PROFILE     ONSITE.PFL
+
+      XDATES      1988/3/1 TO 1988/3/5
+      LOCATION    MYSITE 74.00W 41.3N 5
+      METHOD      WIND_DIR RANDOM
+
+      FREQ_SECT    MONTHLY 1
+      SECTOR 1      0   360
+
+      SITE_CHAR     1   1 0.200      0.800    0.500
+      SITE_CHAR     2   1 0.200      0.800    0.500
+      SITE_CHAR     3   1 0.200      0.800    0.500
+      SITE_CHAR     4   1 0.200      0.800    0.500
+      SITE_CHAR     5   1 0.200      0.800    0.500
+      SITE_CHAR     6   1 0.200      0.800    0.500
+      SITE_CHAR     7   1 0.200      0.800    0.500
+      SITE_CHAR     8   1 0.200      0.800    0.500
+      SITE_CHAR     9   1 0.200      0.800    0.500
+      SITE_CHAR    10   1 0.200      0.800    0.500
+      SITE_CHAR    11   1 0.200      0.800    0.500
+      SITE_CHAR    12   1 0.200      0.800    0.500

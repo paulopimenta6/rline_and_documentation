@@ -1,0 +1,49 @@
+.PHONY: all clean
+
+EXE = RLINEv1_2_gfortran.x
+FC = gfortran
+FFLAGS = -O1 -Wall -fbounds-check
+
+SRCS = \
+ Data_Structures.f90 \
+ Line_Source_Data.f90 \
+ RLINE_Main.f90 \
+ Read_Line_Source_Inputs.f90 \
+ Read_Met_Inputs.f90 \
+ Read_Receptors.f90 \
+ Read_Sources.f90 \
+ Compute_File_Size.f90 \
+ Create_Exp_Table.f90 \
+ Expx.f90 \
+ Fill_Met.f90 \
+ Compute_Met.f90 \
+ Translate_Rotate.f90 \
+ Numerical_Line_Source.f90 \
+ Point_Conc.f90 \
+ Meander.f90 \
+ Polyinterp.f90 \
+ Sigmay.f90 \
+ Sigmaz.f90 \
+ MOST_Wind.f90 \
+ Effective_Wind.f90 \
+ Analytical_Line_Source.f90 \
+ Analytical_Line_Parallel.f90 \
+ Barrier_Displacement.f90 \
+ Depressed_Displacement.f90 \
+ Write_Hourly_All.f90 \
+ Write_Hourly_by_Month.f90 \
+ Write_Daily_Ave.f90 \
+ Deallocate_arrays.f90
+
+OBJS = $(SRCS:.f90=.o)
+
+all: $(EXE)
+
+%.o: %.f90
+	$(FC) $(FFLAGS) -c $<
+
+$(EXE): $(OBJS)
+	$(FC) $(FFLAGS) -o $@ $(OBJS)
+
+clean:
+	rm -f *.o *.mod $(EXE)

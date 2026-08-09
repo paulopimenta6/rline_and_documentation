@@ -1,0 +1,3 @@
+.serena/
+*.tmp
+__pycache__/

@@ -1,0 +1,168 @@
+ AERMET_SETUP
+ SUCCESSFUL
+
+ AERMET VERSION  26135
+
+ START PROCESSING DATE/TIME: AUGUST 09, 2026   9:08:02 AM
+
+ RUNSTREAM CONTROL FILE: ONSITE_S2.INP
+
+
+ ****************************  INPUT SUMMARY **************************** 
+
+ PROCESSING STAGES 2
+
+
+
+ 1.  JOB FILE NAMES
+
+ MESSAGES   OPEN     ONSITE_S2_MESSAGE.TXT
+ REPORT     OPEN     ONSITE_S2_REPORT.RPT
+ DEBUG      NO FILE
+
+
+
+ 2. UPPERAIR DATA
+
+ NO PROCESSING REQUESTED
+
+
+
+
+ 3. SURFACE DATA
+
+ NO PROCESSING REQUESTED
+
+
+
+
+ 4. ONSITE DATA
+
+ PROCESSING DATES: 03/01/1988 - 03/05/1988
+
+                    SITE ID     LATITUDE    LONGITUDE     TIME ADJUSTMENT    ELEVATION
+                   --------     --------    ---------     ---------------    ---------
+ LOCATION:            99999        41.30       -74.00             0               0.00
+
+ DATA FILE: NO FILENAME INPUT
+ QAOUT FILE:     OPEN      ONSITE_QAOUT.TXT
+
+ NUMBER OF OBSERVATIONS/HOUR:  1
+
+
+
+ 5. PROG DATA
+
+ NO PROCESSING REQUESTED
+
+
+
+
+ 6. METPREP DATA
+
+ PROCESSING DATES: 03/01/1988 - 03/05/1988
+
+                    SITE ID     LATITUDE    LONGITUDE     TIME ADJUSTMENT
+                   --------     --------    ---------     ---------------
+ LOCATION:           MYSITE        41.30       -74.00             5
+
+ OUTPUT FILE:    OPEN      ONSITE.SFC
+ PROFILE FILE:   OPEN      ONSITE.PFL
+
+ METPREP PROCESSING OPTIONS
+ PROCESS                     OPTION  DESCRIPTION
+
+ WIND DIRECTION              RANDOM  WIND DIRECTIONS ARE RAMDOMNIZED
+ CLOUD COVER                 SUB_CC  CLOUD COVER SUBSTITUTED
+ TEMPERATURE                 SUB_TT  TEMPERATURE SUBSTITUTED
+ UPPER AIR SELECTION         NONE    USE ONSITE MIXING HEIGHTS
+
+
+ ****************************  SFC CHARACTERISTICS SUMMARY **************************** 
+
+
+ PRIMARY SITE CHARACTERISTICS
+
+YEAR: 1988 FREQUENCY MONTHLY
+           NUMBER OF SECTORS:   1
+
+ YEAR   MONTH        BEGIN SECTOR    END SECTOR     ALBEDO      BOWEN RATIO    ROUGHNESS LENGTH (M)
+ 1988   JANUARY        0.            360.           0.20         0.80          0.5000
+ 1988   FEBRUARY       0.            360.           0.20         0.80          0.5000
+ 1988   MARCH          0.            360.           0.20         0.80          0.5000
+ 1988   APRIL          0.            360.           0.20         0.80          0.5000
+ 1988   MAY            0.            360.           0.20         0.80          0.5000
+ 1988   JUNE           0.            360.           0.20         0.80          0.5000
+ 1988   JULY           0.            360.           0.20         0.80          0.5000
+ 1988   AUGUST         0.            360.           0.20         0.80          0.5000
+ 1988   SEPTEMBER      0.            360.           0.20         0.80          0.5000
+ 1988   OCTOBER        0.            360.           0.20         0.80          0.5000
+ 1988   NOVEMBER       0.            360.           0.20         0.80          0.5000
+ 1988   DECEMBER       0.            360.           0.20         0.80          0.5000
+
+
+ ****************************  OBSERVATIONS PER DAY SUMMARY **************************** 
+
+
+ STARTING: 01-MAR-1988
+ ENDING: 05-MAR-1988
+
+                   ***** TOTAL OBSERVATION COUNTS *****
+
+ NWS UPPER AIR  OBS      0
+ NWS SURFACE    OBS      0
+ ONSITE         OBS    120
+ 1-MIN ASOS HR  OBS      0
+
+                   ***** DAILY OUTPUT STATISTICS *****
+
+        1988 MO/DY:   03/01   03/02   03/03   03/04   03/05
+  NWS UPPER AIR  OBS    0       0       0       0       0
+  NWS SURFACE    OBS    0       0       0       0       0
+  ONSITE         OBS   24      24      24      24      24
+  1-MIN ASOS HR  OBS    0       0       0       0       0
+
+
+ ****************************  PBL PROCESSING SUMMARY **************************** 
+
+ NUMBER OF TOTAL CALMS:      0
+
+ NUMBER OF SUBSTITUTIONS (INTERPOLATION) FOR MISSING CLOUD COVER:      0
+
+ NUMBER OF SUBSTITUTIONS (INTERPOLATION) FOR MISSING TEMPERATURE:      0
+
+ NUMBER OF BAD SURFACE RECORDS IN SURFACE FILE:        0
+
+ NUMBER OF BAD PROFILE RECORDS IN SURFACE FILE:        0
+
+
+ ****************************  MESSAGE SUMMARY **************************** 
+
+
+
+ ERROR MESSAGES        0 MESSAGES
+
+
+
+ WARNING MESSAGES        0 MESSAGES
+
+
+
+ INFORMATION MESSAGES        8 MESSAGES
+
+ I01:        1
+ I60:        2
+ I63:        1
+ I64:        1
+ I66:        1
+ I70:        1
+ I84:        1
+
+
+ QA MESSAGES        0 MESSAGES
+
+
+
+ AERMET FINISHED SUCCESSFULLY
+
+ END PROCESSING DATE/TIME: AUGUST 09, 2026   9:08:02 AM

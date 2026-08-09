@@ -1,0 +1,4 @@
+Source input file
+Group  X_b    Y_b   Z_b    X_e    Y_e   Z_e  dCL  sigmaz0 #lanes  Emis  Hw1  dw1  Hw2  dw2 Depth  Wtop  Wbottom
+----------------------------------------------
+HWY 0.0 0.0 0.0 1000.0 0.0 0.0 0.0 0.0 1.0 0.02 0.0 0.0 0.0 0.0 0.0 0.0 0.0

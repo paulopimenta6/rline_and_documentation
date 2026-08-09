@@ -1,0 +1,27 @@
+JOB
+      REPORT   ONSITE_S1_REPORT.TXT
+      MESSAGES ONSITE_S1_MESSAGE.TXT
+
+ONSITE
+    DATA               ONSITE.MET
+    QAOUT              ONSITE_QAOUT.TXT
+
+      XDATES           1988/3/1 TO 1988/3/5
+      LOCATION         99999 74.0W 41.3N 0
+
+      READ 1 OSDY OSMO OSYR OSHR HT01 SA01 SW01 TT01 WD01 WS01 MHGT TSKC
+      READ 2                     HT02 SA02 SW02 TT02 WD02 WS02
+      READ 3                     HT03 SA03 SW03 TT03 WD03 WS03
+
+      FORMAT 1 FREE
+      FORMAT 2 FREE
+      FORMAT 3 FREE
+
+      RANGE TT -30 < 40 -99
+      RANGE SA 0 <= 95 -99
+      RANGE SW 0 < 3   -99
+      RANGE WS 0 < 50   -999
+      RANGE WD 0 <= 360 -999
+      RANGE MHGT 0 < 4000 -999
+
+      THRESHOLD        0.3

@@ -1,0 +1,10 @@
+This file contains receptor locations		
+X_coordinate	Y_Coordinate	Z_Coordinate
+----------------------------------------------		
+18	0	1.5
+36	0	1.5
+48	0	1.5
+66	0	1.5
+90	0	1.5
+120	0	1.5
+180	0	1.5
