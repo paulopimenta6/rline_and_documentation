@@ -58,8 +58,8 @@ OU FINISHED
  *** SETUP Finishes Successfully ***
  ***********************************
 
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   1
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -122,8 +122,8 @@ OU FINISHED
  **Input Runstream File:          RLINE_TEST.INP                                                                                  
  **Output Print File:             RLINE_TEST.out                                                                                  
 
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   2
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -136,8 +136,8 @@ OU FINISHED
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
  HWY1             0   0.20000E-01      0.0       0.0   0.0   1000.0       0.0   0.0      0.0   0.0  0.00 20.00  NO           
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   3
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -149,8 +149,8 @@ OU FINISHED
 
 
   ALL        HWY1        ,
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   4
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -172,8 +172,8 @@ OU FINISHED
          -100.0,     -80.0,     -60.0,     -40.0,     -20.0,       0.0,      20.0,      40.0,      60.0,      80.0,
           100.0,     120.0,     140.0,     160.0,     180.0,     200.0,     220.0,     240.0,     260.0,     280.0,
           300.0,
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   5
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -216,8 +216,8 @@ OU FINISHED
      -260.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -280.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -300.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   6
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -260,8 +260,8 @@ OU FINISHED
      -260.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -280.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -300.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   7
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -304,8 +304,8 @@ OU FINISHED
      -260.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -280.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -300.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   8
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -348,8 +348,8 @@ OU FINISHED
      -260.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -280.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -300.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE   9
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -392,8 +392,8 @@ OU FINISHED
      -260.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -280.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -300.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  10
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -436,8 +436,8 @@ OU FINISHED
      -260.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -280.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
      -300.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  11
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -450,8 +450,8 @@ OU FINISHED
                             - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
                              HWY1                     0.0           0.0             0.00
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  12
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -475,8 +475,8 @@ OU FINISHED
                                                             (METERS/SEC)
 
                                                  1.54,   3.09,   5.14,   8.23,  10.80,
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  13
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -526,8 +526,8 @@ OU FINISHED
  ** 03 01 01  100.0 1  271.    3.23   276.3   49.0    0.10    1.95
 
  F indicates top of profile (=1) or below (=0)
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  14
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -573,8 +573,8 @@ OU FINISHED
      -260.00 |      72.10640     80.04542     87.62670     94.52716    100.77755    106.69009    112.60892    118.66929    124.75114
      -280.00 |      66.19127     73.09938     79.69573     85.77853     91.27242     96.39049    101.46117    106.59690    111.79356
      -300.00 |      61.02482     67.05353     72.83451     78.21296     83.09674     87.60658     91.97819     96.37675    100.83430
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  15
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -620,8 +620,8 @@ OU FINISHED
      -260.00 |     130.65294    136.21370    141.36689    146.07436    150.27241    153.93307    157.00388    159.43233    161.16924
      -280.00 |     116.92230    121.84324    126.45797    130.70639    134.56181    137.93747    140.75311    142.98589    144.63285
      -300.00 |     105.28106    109.60248    113.72528    117.57510    121.07847    124.16827    126.77420    128.83888    130.36276
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  16
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -667,8 +667,8 @@ OU FINISHED
      -260.00 |     162.17170    162.36784    161.67057    160.05192    157.47352    153.93765    149.66591    144.89645
      -280.00 |     145.59264    145.84200    145.34388    144.04300    141.94491    139.09566    135.64372    131.78365
      -300.00 |     131.29427    131.60645    131.25135    130.21304    128.52127    126.21295    123.41107    120.27097
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  17
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 
@@ -697,8 +697,8 @@ ALL       1ST HIGHEST VALUE IS   48966.60398 AT (     600.00,        0.00,     0
                       GP = GRIDPOLR
                       DC = DISCCART
                       DP = DISCPOLR
- *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/09/26
- *** AERMET - VERSION  26135 ***   ***                                                                      ***        09:58:28
+ *** AERMOD - VERSION 26135  ***   ***   TESTE RLINE COM DADOS ONSITE SINTETICOS                            ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        03:53:56
                                                                                                                        PAGE  18
  *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 

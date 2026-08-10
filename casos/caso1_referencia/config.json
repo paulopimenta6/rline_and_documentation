@@ -1,0 +1,11 @@
+{
+  "nome": "caso1_referencia",
+  "descricao": "Rodovia reta de 1000 m, emissao media, grade de referencia 26x31 (806 receptores)",
+  "comprimento": 1000.0,
+  "y_rodovia": 0.0,
+  "qs": 0.001,
+  "width": 20.0,
+  "grid": {"xini": 0.0, "xn": 26, "xdelta": 40.0,
+           "yini": -300.0, "yn": 31, "ydelta": 20.0},
+  "transecto_x": 600.0
+}

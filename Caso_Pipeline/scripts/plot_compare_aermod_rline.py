@@ -3,8 +3,9 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import os
 
-base = '/media/paulo/12382BE468602ECF/rline_and_documentation/Caso_Pipeline'
+base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 aermod = pd.read_csv(f'{base}/rodada_aermod/CONC_PLOT.PLT', sep=r'\s+',
                      names=['X', 'Y', 'conc', 'ZELEV', 'ZHILL', 'ZFLAG',

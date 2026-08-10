@@ -1,0 +1,7 @@
+Caso: caso1_referencia
+Receptores comparados: 806
+AERMOD PERIOD max: 48966.6 | RLINE media max: 154045.2
+Media AERMOD: 2116.6 | Media RLINE: 5975.7
+Ratio AERMOD/RLINE: media 0.641 mediana 0.643
+R2(log-log) global : 0.9584
+R2(log-log) trecho (0..1000 m): 0.9584  [n=806]

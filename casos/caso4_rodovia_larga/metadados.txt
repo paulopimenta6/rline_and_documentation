@@ -1,0 +1,9 @@
+nome        : caso4_rodovia_larga
+descricao   : Rodovia larga (pista dupla, 40 m) com mesma emissao por area que o caso 1
+comprimento : 1000.0 m
+y_rodovia   : 0.0 m
+qs (Lnemis) : 0.001000 g/s/m2
+width       : 40.00 m
+emis RLINE  : 0.040000 g/m/s
+receptores  : 441 (grid 21x21)
+transecto_x : 600.0 m

@@ -1,0 +1,9 @@
+nome        : caso3_emissao_alta
+descricao   : Rodovia de 1000 m com emissao 5x maior (fluxo intenso / congestionamento)
+comprimento : 1000.0 m
+y_rodovia   : 0.0 m
+qs (Lnemis) : 0.005000 g/s/m2
+width       : 20.00 m
+emis RLINE  : 0.100000 g/m/s
+receptores  : 441 (grid 21x21)
+transecto_x : 600.0 m

@@ -1,0 +1,7 @@
+Caso: caso3_emissao_alta
+Receptores comparados: 441
+AERMOD PERIOD max: 244833.0 | RLINE media max: 770226.2
+Media AERMOD: 15316.6 | Media RLINE: 42898.4
+Ratio AERMOD/RLINE: media 0.563 mediana 0.581
+R2(log-log) global : 0.9638
+R2(log-log) trecho (0..1000 m): 0.9638  [n=441]

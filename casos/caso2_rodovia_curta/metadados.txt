@@ -1,0 +1,9 @@
+nome        : caso2_rodovia_curta
+descricao   : Trecho curto de rodovia (300 m), tipico de via urbana / rampa de acesso
+comprimento : 300.0 m
+y_rodovia   : 0.0 m
+qs (Lnemis) : 0.001000 g/s/m2
+width       : 20.00 m
+emis RLINE  : 0.020000 g/m/s
+receptores  : 441 (grid 21x21)
+transecto_x : 150.0 m

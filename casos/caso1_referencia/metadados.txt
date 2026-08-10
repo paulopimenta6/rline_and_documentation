@@ -1,0 +1,9 @@
+nome        : caso1_referencia
+descricao   : Rodovia reta de 1000 m, emissao media, grade de referencia 26x31 (806 receptores)
+comprimento : 1000.0 m
+y_rodovia   : 0.0 m
+qs (Lnemis) : 0.001000 g/s/m2
+width       : 20.00 m
+emis RLINE  : 0.020000 g/m/s
+receptores  : 806 (grid 26x31)
+transecto_x : 600.0 m

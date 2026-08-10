@@ -1,0 +1,645 @@
+CO STARTING
+   TITLEONE   CASO4_RODOVIA_LARGA
+   MODELOPT   DFAULT CONC
+   AVERTIME   PERIOD
+   POLLUTID   OTHER
+   RUNORNOT   RUN
+CO FINISHED
+
+SO STARTING
+   LOCATION   HWY1    RLINE  0.0  0.000  1000.000  0.000
+   SRCPARAM   HWY1   0.001000  0.0   40.000
+   SRCGROUP   ALL
+SO FINISHED
+
+RE STARTING
+   GRIDCART   RCART STA
+   GRIDCART   RCART XYINC  0.000  21  40.000  -200.000  21  20.000
+   GRIDCART   RCART END
+RE FINISHED
+
+ME STARTING
+   SURFFILE   ONSITE.SFC
+   PROFFILE   ONSITE.PFL
+   SURFDATA   99999  1988
+   UAIRDATA   99999  1988
+   SITEDATA   99999  1988
+   PROFBASE   10.0 METERS
+ME FINISHED
+
+OU STARTING
+   RECTABLE   ALLAVE FIRST
+   PLOTFILE   PERIOD ALL CONC_PLOT.PLT
+   MAXTABLE   ALLAVE 20
+OU FINISHED
+
+
+  *** Message Summary For AERMOD Model Setup ***
+
+  --------- Summary of Total Messages --------
+  
+ A Total of            0 Fatal Error Message(s)
+ A Total of            6 Warning Message(s)
+ A Total of            0 Informational Message(s)
+  
+  
+    ******** FATAL ERROR MESSAGES ******** 
+               ***  NONE  ***         
+  
+  
+    ********   WARNING MESSAGES   ******** 
+ SO W205      10       SOLOCA: No Option Parameter Setting.  Forced by Default to     ZS = 0.0
+ SO W320      11       RLPARM: Input Parameter May Be Out-of-Range for Parameter         WIDTH
+ RE W214      18       RECART: ELEV Input Inconsistent With Option: Defaults Used        RCART
+ ME W531      28       MEOPEN: CAUTION! Met Station ID Missing from SURFFILE for      SURFDATA
+ ME W531      28       MEOPEN: CAUTION! Met Station ID Missing from SURFFILE for      UAIRDATA
+ MX W403      28       PFLCNV: Turbulence data is being used w/o ADJ_U* option     SigA & SigW
+
+ ***********************************
+ *** SETUP Finishes Successfully ***
+ ***********************************
+
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   1
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                            ***     MODEL SETUP OPTIONS SUMMARY       ***
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ** Model Options Selected:
+      * Model Uses Regulatory DEFAULT Options
+      * Model Is Setup For Calculation of Average CONCentration Values.
+      * NO GAS DEPOSITION Data Provided.
+      * NO PARTICLE DEPOSITION Data Provided.
+      * Model Uses NO DRY DEPLETION. DDPLETE  =  F
+      * Model Uses NO WET DEPLETION. WETDPLT  =  F
+      * Stack-tip Downwash.
+      * Model Accounts for ELEVated Terrain Effects.
+      * Use Calms Processing Routine.
+      * Use Missing Data Processing Routine.
+      * No Exponential Decay.
+      * Model Uses RURAL Dispersion Only.
+      * CCVR_Sub - Meteorological data includes CCVR substitutions
+      * TEMP_Sub - Meteorological data includes TEMP substitutions
+      * Model Assumes No FLAGPOLE Receptor Heights. 
+      * The User Specified a Pollutant Type of: OTHER   
+  
+ **Model Calculates PERIOD Averages Only
+  
+ **This Run Includes:      1 Source(s);       1 Source Group(s); and     441 Receptor(s)
+
+                with:      0 POINT(s), including
+                           0 POINTCAP(s) and      0 POINTHOR(s)
+                 and:      0 VOLUME source(s)
+                 and:      0 AREA type source(s)
+                 and:      0 LINE source(s)
+                 and:      1 RLINE/RLINEXT source(s)
+                 and:      0 OPENPIT source(s)
+                 and:      0 BUOYANT LINE source(s) with a total of     0 line(s)
+                 and:      0 SWPOINT source(s)
+
+  
+ **Model Set To Continue RUNning After the Setup Testing.
+
+ **The AERMET Input Meteorological Data Version Date:  26135
+  
+ **Output Options Selected:
+          Model Outputs Tables of PERIOD Averages by Receptor
+          Model Outputs Tables of Highest Short Term Values by Receptor (RECTABLE Keyword)
+          Model Outputs Tables of Overall Maximum Short Term Values (MAXTABLE Keyword)
+          Model Outputs External File(s) of High Values for Plotting (PLOTFILE Keyword)
+  
+ **NOTE:  The Following Flags May Appear Following CONC Values:  c for Calm Hours
+                                                                 m for Missing Hours
+                                                                 b for Both Calm and Missing Hours
+  
+ **Misc. Inputs:  Base Elev. for Pot. Temp. Profile (m MSL) =    10.00 ;  Decay Coef. =    0.000     ;  Rot. Angle =     0.0
+                  Emission Units = GRAMS/SEC                                ;  Emission Rate Unit Factor =   0.10000E+07
+                  Output Units   = MICROGRAMS/M**3                         
+  
+ **Approximate Storage Requirements of Model =      3.5 MB of RAM.
+  
+ **Input Runstream File:          RLINE_TEST.INP                                                                                  
+ **Output Print File:             RLINE_TEST.out                                                                                  
+
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   2
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+
+                                                  *** RLINE/RLINEXT SOURCE DATA ***
+
+               NUMBER EMISSION RATE      FIRST COORD             SECOND COORD         BASE        INIT.  WIDTH  URBAN EMIS RATE
+   SOURCE       PART.  (GRAMS/SEC     X       Y       Z        X       Y        Z     ELEV.   DCL   SZ          SOURCE  SCALAR
+     ID         CATS.     /METER)    (M)     (M)     (M)      (M)     (M)      (M)     (M)    (M)   (M)    (M)           VARY BY
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ HWY1             0   0.40000E-01      0.0       0.0   0.0   1000.0       0.0   0.0      0.0   0.0  0.00 40.00  NO           
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   3
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+
+                                           *** SOURCE IDs DEFINING SOURCE GROUPS ***
+
+ SRCGROUP ID                                              SOURCE IDs
+ -----------                                              ----------
+
+
+  ALL        HWY1        ,
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   4
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                        *** GRIDDED RECEPTOR NETWORK SUMMARY ***
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                          *** X-COORDINATES OF GRID ***
+                                                    (METERS)
+
+            0.0,      40.0,      80.0,     120.0,     160.0,     200.0,     240.0,     280.0,     320.0,     360.0,
+          400.0,     440.0,     480.0,     520.0,     560.0,     600.0,     640.0,     680.0,     720.0,     760.0,
+          800.0,
+
+                                          *** Y-COORDINATES OF GRID *** 
+                                                    (METERS)
+
+         -200.0,    -180.0,    -160.0,    -140.0,    -120.0,    -100.0,     -80.0,     -60.0,     -40.0,     -20.0,
+            0.0,      20.0,      40.0,      60.0,      80.0,     100.0,     120.0,     140.0,     160.0,     180.0,
+          200.0,
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   5
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                                * ELEVATION HEIGHTS IN METERS *
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |          0.00        40.00        80.00       120.00       160.00       200.00       240.00       280.00       320.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+        0.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   6
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                                * ELEVATION HEIGHTS IN METERS *
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |        360.00       400.00       440.00       480.00       520.00       560.00       600.00       640.00       680.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+        0.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   7
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                                * ELEVATION HEIGHTS IN METERS *
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |        720.00       760.00       800.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |          0.00         0.00         0.00
+      180.00 |          0.00         0.00         0.00
+      160.00 |          0.00         0.00         0.00
+      140.00 |          0.00         0.00         0.00
+      120.00 |          0.00         0.00         0.00
+      100.00 |          0.00         0.00         0.00
+       80.00 |          0.00         0.00         0.00
+       60.00 |          0.00         0.00         0.00
+       40.00 |          0.00         0.00         0.00
+       20.00 |          0.00         0.00         0.00
+        0.00 |          0.00         0.00         0.00
+      -20.00 |          0.00         0.00         0.00
+      -40.00 |          0.00         0.00         0.00
+      -60.00 |          0.00         0.00         0.00
+      -80.00 |          0.00         0.00         0.00
+     -100.00 |          0.00         0.00         0.00
+     -120.00 |          0.00         0.00         0.00
+     -140.00 |          0.00         0.00         0.00
+     -160.00 |          0.00         0.00         0.00
+     -180.00 |          0.00         0.00         0.00
+     -200.00 |          0.00         0.00         0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   8
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                                * HILL HEIGHT SCALES IN METERS *
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |          0.00        40.00        80.00       120.00       160.00       200.00       240.00       280.00       320.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+        0.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE   9
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                                * HILL HEIGHT SCALES IN METERS *
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |        360.00       400.00       440.00       480.00       520.00       560.00       600.00       640.00       680.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+       20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+        0.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -20.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -40.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -60.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+      -80.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -100.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -120.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -140.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -160.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -180.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+     -200.00 |          0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00         0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  10
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                  *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                                * HILL HEIGHT SCALES IN METERS *
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |        720.00       760.00       800.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |          0.00         0.00         0.00
+      180.00 |          0.00         0.00         0.00
+      160.00 |          0.00         0.00         0.00
+      140.00 |          0.00         0.00         0.00
+      120.00 |          0.00         0.00         0.00
+      100.00 |          0.00         0.00         0.00
+       80.00 |          0.00         0.00         0.00
+       60.00 |          0.00         0.00         0.00
+       40.00 |          0.00         0.00         0.00
+       20.00 |          0.00         0.00         0.00
+        0.00 |          0.00         0.00         0.00
+      -20.00 |          0.00         0.00         0.00
+      -40.00 |          0.00         0.00         0.00
+      -60.00 |          0.00         0.00         0.00
+      -80.00 |          0.00         0.00         0.00
+     -100.00 |          0.00         0.00         0.00
+     -120.00 |          0.00         0.00         0.00
+     -140.00 |          0.00         0.00         0.00
+     -160.00 |          0.00         0.00         0.00
+     -180.00 |          0.00         0.00         0.00
+     -200.00 |          0.00         0.00         0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  11
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                      * SOURCE-RECEPTOR COMBINATIONS FOR WHICH CALCULATIONS MAY NOT BE PERFORMED *
+                        LESS THAN 1.0 METER; WITHIN OPENPIT; OR BEYOND 80KM FOR FASTAREA/FASTALL
+
+
+                              SOURCE          - - RECEPTOR LOCATION - -         DISTANCE
+                                ID            XR (METERS)   YR (METERS)         (METERS)
+                            - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+                             HWY1                     0.0           0.0             0.00
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  12
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                            *** METEOROLOGICAL DAYS SELECTED FOR PROCESSING ***
+                                                               (1=YES; 0=NO)
+
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1 1 1   1 1 1 1 1 1
+
+                NOTE:  METEOROLOGICAL DATA ACTUALLY PROCESSED WILL ALSO DEPEND ON WHAT IS INCLUDED IN THE DATA FILE.
+
+
+
+                                  *** UPPER BOUND OF FIRST THROUGH FIFTH WIND SPEED CATEGORIES ***
+                                                            (METERS/SEC)
+
+                                                 1.54,   3.09,   5.14,   8.23,  10.80,
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  13
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                    *** UP TO THE FIRST 24 HOURS OF METEOROLOGICAL DATA ***
+
+   Surface file:   ONSITE.SFC                                                                         Met Version:  26135
+   Profile file:   ONSITE.PFL                                                                      
+   Surface format: FREE                                                                                                     
+   Profile format: FREE                                                                                                     
+   Surface station no.:    99999                  Upper air station no.:    99999
+                  Name: UNKNOWN                                    Name: UNKNOWN                                 
+                  Year:   1988                                     Year:   1988
+
+ First 24 hours of scalar data
+ YR MO DY JDY HR     H0     U*     W*  DT/DZ ZICNV ZIMCH  M-O LEN    Z0  BOWEN ALBEDO  REF WS   WD     HT  REF TA     HT
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ** 03 01  61 01  -14.4  0.136 -9.000 -9.000 -999.  211.     15.9  0.50   0.80   1.00    2.04  259.   10.0  274.6   10.0
+ 88 03 01  61 02  -13.5  0.131 -9.000 -9.000 -999.  158.     14.9  0.50   0.80   1.00    1.96  260.   10.0  275.7   10.0
+ 88 03 01  61 03   -9.0  0.112 -9.000 -9.000 -999.  254.     14.2  0.50   0.80   1.00    1.68  264.   10.0  276.6   10.0
+ 88 03 01  61 04  -17.8  0.168 -9.000 -9.000 -999.  235.     24.1  0.50   0.80   1.00    2.13  260.   10.0  277.2   10.0
+ 88 03 01  61 05   -8.6  0.107 -9.000 -9.000 -999.  298.     12.8  0.50   0.80   1.00    1.60  270.   10.0  278.5   10.0
+ 88 03 01  61 06  -21.8  0.233 -9.000 -9.000 -999.  224.     52.6  0.50   0.80   1.00    2.30  267.   10.0  280.3   10.0
+ 88 03 01  61 07  -13.7  0.133 -9.000 -9.000 -999.  573.     15.5  0.50   0.80   1.00    1.99  273.   10.0  280.7   10.0
+ 88 03 01  61 08    4.0  0.329  0.426  0.005  705.  455.   -814.9  0.50   0.80   0.42    2.43  263.   10.0  282.7   10.0
+ 88 03 01  61 09   49.2  0.423  1.098  0.005  972.  660.   -139.2  0.50   0.80   0.28    2.95  261.   10.0  283.8   10.0
+ 88 03 01  61 10   94.9  0.491  1.457  0.005 1178.  825.   -112.6  0.50   0.80   0.23    3.38  270.   10.0  285.7   10.0
+ 88 03 01  61 11  126.6  0.437  1.626  0.005 1228.  697.    -59.6  0.50   0.80   0.22    2.86  272.   10.0  286.4   10.0
+ 88 03 01  61 12  137.8  0.474  1.726  0.005 1352.  783.    -69.9  0.50   0.80   0.21    3.15  259.   10.0  287.5   10.0
+ 88 03 01  61 13  144.3  0.538  1.797  0.005 1455.  946.    -97.6  0.50   0.80   0.21    3.67  273.   10.0  287.9   10.0
+ 88 03 01  61 14  131.2  0.539  1.766  0.005 1520.  949.   -107.8  0.50   0.80   0.21    3.70  270.   10.0  288.5   10.0
+ 88 03 01  61 15   97.4  0.492  1.570  0.005 1437.  830.   -110.2  0.50   0.80   0.23    3.38  266.   10.0  288.5   10.0
+ 88 03 01  61 16   67.1  0.444  1.391  0.005 1452.  714.   -118.2  0.50   0.80   0.26    3.07  262.   10.0  287.8   10.0
+ 88 03 01  61 17   17.8  0.393  0.878  0.005 1373.  594.   -308.9  0.50   0.80   0.36    2.84  269.   10.0  286.8   10.0
+ 88 03 01  61 18  -32.2  0.378 -9.000 -9.000 -999. 1160.    150.9  0.50   0.80   0.67    3.14  259.   10.0  285.9   10.0
+ 88 03 01  61 19  -38.5  0.343 -9.000 -9.000 -999. 1004.     94.6  0.50   0.80   1.00    3.02  265.   10.0  284.2   10.0
+ 88 03 01  61 20  -36.2  0.328 -9.000 -9.000 -999.  719.     87.8  0.50   0.80   1.00    2.92  271.   10.0  283.0   10.0
+ 88 03 01  61 21  -20.2  0.217 -9.000 -9.000 -999.  593.     45.7  0.50   0.80   1.00    2.22  259.   10.0  280.7   10.0
+ 88 03 01  61 22  -10.2  0.116 -9.000 -9.000 -999.  440.     14.0  0.50   0.80   1.00    1.74  272.   10.0  280.8   10.0
+ 88 03 01  61 23  -16.3  0.155 -9.000 -9.000 -999.  274.     20.6  0.50   0.80   1.00    2.10  265.   10.0  278.8   10.0
+ 88 03 01  61 24  -11.3  0.120 -9.000 -9.000 -999.  296.     13.9  0.50   0.80   1.00    1.80  257.   10.0  277.7   10.0
+
+
+ First hour of profile data
+ YR MO DY HR HEIGHT F  WDIR    WSPD AMB_TMP sigmaA  sigmaW  sigmaV
+ ** 03 01 01   10.0 0  259.    2.04   274.7   36.2    0.07    1.07
+ ** 03 01 01   50.0 0  265.    2.81   275.5   42.6    0.08    1.61
+ ** 03 01 01  100.0 1  271.    3.23   276.3   49.0    0.10    1.95
+
+ F indicates top of profile (=1) or below (=0)
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  14
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                              *** THE PERIOD (   120 HRS) AVERAGE CONCENTRATION   VALUES FOR SOURCE GROUP: ALL      ***
+                                  INCLUDING SOURCE(S):     HWY1        , 
+
+                                   *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                        ** CONC OF OTHER    IN MICROGRAMS/M**3                          **
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |          0.00        40.00        80.00       120.00       160.00       200.00       240.00       280.00       320.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |     192.02281    218.24356    243.11265    269.02546    298.08879    329.02049    359.61167    388.50963    415.08117
+      180.00 |     214.36275    246.27028    276.68199    309.44377    346.14520    383.86580    419.90582    453.07633    483.13548
+      160.00 |     241.99242    281.46624    319.89171    362.73444    409.60671    455.65512    498.07459    536.15960    570.08600
+      140.00 |     276.58882    327.15339    377.89864    435.89794    496.28360    552.52601    602.37763    646.17278    684.59318
+      120.00 |     321.80861    389.64959    461.23766    542.23607    620.32595    688.91395    747.65481    798.21844    842.18326
+      100.00 |     382.49811    482.02885    592.01586    707.62997    808.77676    892.64236    962.50795   1021.62701   1072.57677
+       80.00 |     478.19932    639.20649    823.70642    990.74679   1122.16099   1226.52525   1310.99514   1381.50042   1441.58292
+       60.00 |     666.77030   1038.84003   1371.16127   1611.74833   1786.42844   1924.75601   2025.14596   2108.02560   2177.38215
+       40.00 |    1338.22636   2756.84335   3375.88126   3735.92079   3968.73795   4136.52129   4255.80998   4362.63839   4432.98427
+       20.00 |    3168.48992   8336.12152   9309.73349   9786.41788  10107.98260  10305.99109  10424.49601  10555.33245  10641.80758
+        0.00 |   39699.68792  87110.47543  88415.59249  89067.68182  89106.15879  89224.67026  89470.00639  89494.08101  89665.76717
+      -20.00 |    1894.43304   7910.41102   8803.02744   9252.65292   9503.88562   9650.45365   9749.82803   9853.60162   9950.73032
+      -40.00 |     976.48846   2499.97865   3011.69909   3304.58569   3478.83207   3606.26523   3709.79664   3784.81747   3841.14395
+      -60.00 |     633.82325    965.53972   1209.75785   1406.01326   1534.66266   1634.08778   1715.92068   1776.21023   1819.99435
+      -80.00 |     477.17105    622.28619    754.65021    878.72543    980.30658   1061.05428   1125.09230   1176.61502   1219.67075
+     -100.00 |     376.44173    478.14407    560.39955    642.01775    717.86659    782.59113    836.35124    881.06129    918.61859
+     -120.00 |     321.57965    388.71807    446.85242    502.89327    558.94807    610.57604    655.66835    694.29313    727.36924
+     -140.00 |     276.59675    326.90727    371.35638    412.36002    454.03692    494.89404    532.41439    565.67854    594.75760
+     -160.00 |     241.87015    281.39461    316.86397    348.67548    380.38594    412.58455    443.60082    472.05894    497.50410
+     -180.00 |     214.02753    246.24535    275.24810    301.04661    325.97159    351.49701    376.96851    401.16351    423.38224
+     -200.00 |     191.54704    218.24427    242.43817    263.96872    284.21785    304.72292    325.60542    346.08470    365.32639
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  15
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                              *** THE PERIOD (   120 HRS) AVERAGE CONCENTRATION   VALUES FOR SOURCE GROUP: ALL      ***
+                                  INCLUDING SOURCE(S):     HWY1        , 
+
+                                   *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                        ** CONC OF OTHER    IN MICROGRAMS/M**3                          **
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |        360.00       400.00       440.00       480.00       520.00       560.00       600.00       640.00       680.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |     439.31297    461.29521    481.10575    498.88559    514.90868    529.19983    541.81431    552.70288    561.48204
+      180.00 |     510.14063    534.41148    556.20444    575.64787    593.05276    608.57089    622.34388    634.06473    643.60174
+      160.00 |     600.27503    627.23846    651.26564    672.67386    691.78261    708.77892    723.79980    736.64384    747.03179
+      140.00 |     718.49553    748.62871    775.39334    799.15439    820.29226    839.08654    855.62904    869.73275    881.06063
+      120.00 |     880.61791    914.64742    944.81867    971.41904    994.96498   1015.81040   1034.00012   1049.42402   1061.64652
+      100.00 |    1116.87372   1155.76101   1189.96389   1219.87930   1246.03437   1268.92206   1288.71109   1305.24435   1318.25826
+       80.00 |    1493.18798   1537.64328   1575.71634   1609.32019   1637.47795   1662.31907   1683.20802   1700.51887   1714.50031
+       60.00 |    2240.71062   2283.35360   2328.69547   2369.72267   2395.97914   2417.89282   2440.63313   2464.20605   2473.42420
+       40.00 |    4504.48708   4558.02059   4601.11965   4641.49921   4678.71237   4702.49157   4717.43801   4742.49958   4753.33583
+       20.00 |   10678.68038  10744.59098  10793.11850  10839.68688  10847.17396  10880.90543  10900.82848  10932.97301  10941.10332
+        0.00 |   89892.71414  89767.96776  89750.55096  89842.72456  89806.67299  89918.94945  90142.03895  89939.81734  89896.44519
+      -20.00 |    9979.07403  10018.55676  10085.12467  10138.81128  10129.80036  10138.64338  10211.85938  10253.47407  10200.97604
+      -40.00 |    3883.83458   3927.00388   3954.09813   3988.52461   4010.24928   4031.86935   4053.33721   4066.66411   4079.04534
+      -60.00 |    1863.91853   1902.18725   1929.61985   1956.28958   1978.37513   1995.71204   2008.49300   2020.30419   2036.52658
+      -80.00 |    1255.67045   1286.34920   1311.98930   1334.46227   1353.18223   1369.47121   1382.98188   1393.48690   1401.62469
+     -100.00 |     950.41324    977.58487   1000.86768   1020.71594   1037.61629   1052.07059   1064.16532   1073.75168   1080.50183
+     -120.00 |     755.68531    780.07358    801.08452    819.08998    834.41374    847.50402    858.49593    867.09860    873.10007
+     -140.00 |     620.00788    642.00409    661.03197    677.39403    691.41806    703.40766    713.44828    721.29559    726.77602
+     -160.00 |     520.02197    539.82493    557.09387    572.04119    584.90833    595.92169    605.09643    612.33640    617.33780
+     -180.00 |     443.34874    461.13823    476.81285    490.45680    502.27775    512.41450    520.91263    527.55890    532.19396
+     -200.00 |     382.99707    398.91232    413.12479    425.57773    436.45008    445.80793    453.64413    459.80420    464.09582
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  16
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                              *** THE PERIOD (   120 HRS) AVERAGE CONCENTRATION   VALUES FOR SOURCE GROUP: ALL      ***
+                                  INCLUDING SOURCE(S):     HWY1        , 
+
+                                   *** NETWORK ID: RCART    ;  NETWORK TYPE: GRIDCART ***
+
+                                        ** CONC OF OTHER    IN MICROGRAMS/M**3                          **
+
+    Y-COORD  |                                                X-COORD (METERS)
+    (METERS) |        720.00       760.00       800.00
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      200.00 |     568.03706    572.20509    573.38747
+      180.00 |     650.66659    654.90741    655.79357
+      160.00 |     754.64944    759.07116    759.60683
+      140.00 |     889.29571    893.85170    893.86063
+      120.00 |    1070.45999   1075.07021   1074.45602
+      100.00 |    1327.41597   1331.92315   1330.62816
+       80.00 |    1723.67817   1727.99193   1725.70598
+       60.00 |    2479.41572   2490.52984   2487.66042
+       40.00 |    4751.97001   4757.81048   4770.49728
+       20.00 |   10942.22701  10951.41929  10969.24972
+        0.00 |   89934.77840  89841.40258  89932.51267
+      -20.00 |   10187.21198  10222.91808  10245.63748
+      -40.00 |    4086.20877   4086.72834   4077.78730
+      -60.00 |    2036.49753   2034.74769   2030.36159
+      -80.00 |    1405.60470   1405.52179   1399.03998
+     -100.00 |    1083.98858   1083.41470   1077.52421
+     -120.00 |     876.14800    875.45320    870.04525
+     -140.00 |     729.43954    728.80590    723.99109
+     -160.00 |     619.80968    619.31985    615.19463
+     -180.00 |     534.51140    534.20694    530.72548
+     -200.00 |     466.30421    466.18464    463.35518
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  17
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+                                        *** THE SUMMARY OF MAXIMUM PERIOD (   120 HRS) RESULTS ***
+
+
+                                    ** CONC OF OTHER    IN MICROGRAMS/M**3                          **
+
+                                                                                                             NETWORK
+GROUP ID                       AVERAGE CONC                RECEPTOR  (XR, YR, ZELEV, ZHILL, ZFLAG)  OF TYPE  GRID-ID
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+ALL       1ST HIGHEST VALUE IS   90142.03895 AT (     600.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          2ND HIGHEST VALUE IS   89939.81734 AT (     640.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          3RD HIGHEST VALUE IS   89934.77840 AT (     720.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          4TH HIGHEST VALUE IS   89932.51267 AT (     800.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          5TH HIGHEST VALUE IS   89918.94945 AT (     560.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          6TH HIGHEST VALUE IS   89896.44519 AT (     680.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          7TH HIGHEST VALUE IS   89892.71414 AT (     360.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          8TH HIGHEST VALUE IS   89842.72456 AT (     480.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+          9TH HIGHEST VALUE IS   89841.40258 AT (     760.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+         10TH HIGHEST VALUE IS   89806.67299 AT (     520.00,        0.00,     0.00,     0.00,    0.00)  GC  RCART   
+
+
+ *** RECEPTOR TYPES:  GC = GRIDCART
+                      GP = GRIDPOLR
+                      DC = DISCCART
+                      DP = DISCPOLR
+ *** AERMOD - VERSION 26135  ***   ***   CASO4_RODOVIA_LARGA                                                ***        08/10/26
+ *** AERMET - VERSION  26135 ***   ***                                                                      ***        06:15:28
+                                                                                                                       PAGE  18
+ *** MODELOPTs:    RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
+
+ *** Message Summary : AERMOD Model Execution ***
+
+  --------- Summary of Total Messages --------
+  
+ A Total of            0 Fatal Error Message(s)
+ A Total of            6 Warning Message(s)
+ A Total of            0 Informational Message(s)
+
+ A Total of          120 Hours Were Processed
+
+ A Total of            0 Calm Hours Identified
+
+ A Total of            0 Missing Hours Identified (  0.00 Percent)
+  
+  
+    ******** FATAL ERROR MESSAGES ******** 
+               ***  NONE  ***         
+  
+  
+    ********   WARNING MESSAGES   ******** 
+ SO W205      10       SOLOCA: No Option Parameter Setting.  Forced by Default to     ZS = 0.0
+ SO W320      11       RLPARM: Input Parameter May Be Out-of-Range for Parameter         WIDTH
+ RE W214      18       RECART: ELEV Input Inconsistent With Option: Defaults Used        RCART
+ ME W531      28       MEOPEN: CAUTION! Met Station ID Missing from SURFFILE for      SURFDATA
+ ME W531      28       MEOPEN: CAUTION! Met Station ID Missing from SURFFILE for      UAIRDATA
+ MX W403      28       PFLCNV: Turbulence data is being used w/o ADJ_U* option     SigA & SigW
+
+    ************************************
+    *** AERMOD Finishes Successfully ***
+    ************************************
+

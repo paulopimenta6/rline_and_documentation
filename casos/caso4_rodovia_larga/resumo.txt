@@ -1,0 +1,7 @@
+Caso: caso4_rodovia_larga
+Receptores comparados: 441
+AERMOD PERIOD max: 90142.0 | RLINE media max: 256727.6
+Media AERMOD: 6120.0 | Media RLINE: 14875.7
+Ratio AERMOD/RLINE: media 0.609 mediana 0.608
+R2(log-log) global : 0.9551
+R2(log-log) trecho (0..1000 m): 0.9551  [n=441]

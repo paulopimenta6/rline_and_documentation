@@ -1,0 +1,11 @@
+{
+  "nome": "caso3_emissao_alta",
+  "descricao": "Rodovia de 1000 m com emissao 5x maior (fluxo intenso / congestionamento)",
+  "comprimento": 1000.0,
+  "y_rodovia": 0.0,
+  "qs": 0.005,
+  "width": 20.0,
+  "grid": {"xini": 0.0, "xn": 21, "xdelta": 40.0,
+           "yini": -200.0, "yn": 21, "ydelta": 20.0},
+  "transecto_x": 600.0
+}

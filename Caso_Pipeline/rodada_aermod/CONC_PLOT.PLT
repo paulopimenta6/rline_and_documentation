@@ -1,5 +1,5 @@
-* AERMOD (26135 ):   TESTE RLINE COM DADOS ONSITE SINTETICOS                                08/09/26
-* AERMET ( 26135):                                                                          09:58:28
+* AERMOD (26135 ):   TESTE RLINE COM DADOS ONSITE SINTETICOS                                08/10/26
+* AERMET ( 26135):                                                                          03:53:56
 * MODELING OPTIONS USED:   RegDFAULT  CONC  ELEV  RURAL  SigA&SigW
 *         PLOT FILE OF PERIOD VALUES AVERAGED ACROSS   0 YEARS FOR SOURCE GROUP: ALL     
 *         FOR A TOTAL OF   806 RECEPTORS.

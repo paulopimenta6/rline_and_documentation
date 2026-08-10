@@ -1,3 +1,15 @@
+# ---------------------------------------------------------------------------
+# Makefile.gfortran — compilacao do RLINE v1.2 standalone (gfortran)
+#
+# Dependencias de modulos expressas para permitir `make -j$(nproc) -f Makefile.gfortran`:
+#   Data_Structures.f90  -> module Data_Structures (sem dependencias)
+#   Line_Source_Data.f90 -> module Line_Source_Data (usa Data_Structures)
+#   demais arquivos      -> usam Line_Source_Data
+# Os .mod sao gerados como efeito colateral da compilacao dos .o.
+#
+#   Binario gerado: RLINEv1_2_gfortran.x
+#   Limpeza:        make -f Makefile.gfortran clean
+# ---------------------------------------------------------------------------
 .PHONY: all clean
 
 EXE = RLINEv1_2_gfortran.x
@@ -36,11 +48,20 @@ SRCS = \
  Deallocate_arrays.f90
 
 OBJS = $(SRCS:.f90=.o)
-
-all: $(EXE)
+DEP_LEAF = Data_Structures.o
+DEP_LINE = Line_Source_Data.o
+DEP_OTHER = $(filter-out $(DEP_LEAF) $(DEP_LINE),$(OBJS))
 
 %.o: %.f90
 	$(FC) $(FFLAGS) -c $<
+
+# ---- Dependencias topologicas ---------------------------------------------
+$(DEP_LINE): $(DEP_LEAF)
+$(DEP_OTHER): $(DEP_LINE)
+
+.DEFAULT_GOAL := all
+
+all: $(EXE)
 
 $(EXE): $(OBJS)
 	$(FC) $(FFLAGS) -o $@ $(OBJS)

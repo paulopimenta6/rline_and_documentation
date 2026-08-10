@@ -1,3 +1,15 @@
 .serena/
 *.tmp
 __pycache__/
+
+# Artefatos de compilacao Fortran (os binarios sao versionados)
+*.o
+*.mod
+
+# Copias locais de meteorologia nos casos (a met canonica vive em
+# Caso_Pipeline/dados_aermet/ONSITE.SFC/.PFL) e logs de wrapper
+casos/*/rodada_aermod/ONSITE.SFC
+casos/*/rodada_aermod/ONSITE.PFL
+casos/*/rodada_aermod/RLINE_TEST.INP
+casos/*/rodada_rline/ONSITE.SFC
+**/AERMOD_RUN.out

@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
+import os
 
-base = '/media/paulo/12382BE468602ECF/rline_and_documentation/Caso_Pipeline'
+base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ---- AERMOD: CONC_PLOT.PLT (806 receptores, conc PERIOD em ug/m3)
 aermod = pd.read_csv(f'{base}/rodada_aermod/CONC_PLOT.PLT', sep=r'\s+',

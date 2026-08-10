@@ -1,0 +1,11 @@
+{
+  "nome": "caso2_rodovia_curta",
+  "descricao": "Trecho curto de rodovia (300 m), tipico de via urbana / rampa de acesso",
+  "comprimento": 300.0,
+  "y_rodovia": 0.0,
+  "qs": 0.001,
+  "width": 20.0,
+  "grid": {"xini": 0.0, "xn": 21, "xdelta": 40.0,
+           "yini": -200.0, "yn": 21, "ydelta": 20.0},
+  "transecto_x": 150.0
+}
