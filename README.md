@@ -135,6 +135,7 @@ usam discretizações numéricas diferentes (AERMOD é a versão regulatória; o
 
 ```
 rline_and_documentation/
+├── PLANO_MELHORIAS_PROJETO.md        # diagnóstico e roteiro de implementação
 ├── PIPELINE_IMPLEMENTACAO.txt        # especificação + automação + validação
 ├── GUIA_RLINE.md                     # conceitos RLINE
 ├── GUIA_PIPELINE_AERMET_AERMOD_RLINE.md
@@ -158,6 +159,8 @@ rline_and_documentation/
 
 ## 📚 Documentação e referências
 
+- [PLANO_MELHORIAS_PROJETO.md](PLANO_MELHORIAS_PROJETO.md) — diagnóstico técnico,
+  prioridades, critérios de aceite e roteiro para as próximas implementações.
 - [PIPELINE_IMPLEMENTACAO.txt](PIPELINE_IMPLEMENTACAO.txt) — a bíblia: especificação,
   automação e validação T1–T8 (incl. EPA).
 - [GUIA_RLINE.md](GUIA_RLINE.md) — conceitos do modelo RLINE e uso standalone.
