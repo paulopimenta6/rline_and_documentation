@@ -2,8 +2,9 @@
 
 Este guia descreve o caso canônico implementado em `Caso_Pipeline/`: geração de
 meteorologia, AERMET Stages 1 e 2, AERMOD v26135 com fonte `RLINE`, RLINE v1.2
-standalone corrigido e pós-processamento. O AERMOD contém a fonte `RLINE` nativa
-desde a v22112.
+standalone corrigido e pós-processamento. A fonte `RLINE` apareceu como beta no
+AERMOD v19191, foi reformulada na v23132 e passou à configuração regulatória na
+v24142; o pipeline usa a v26135.
 
 Para os formatos próprios do standalone, consulte [`GUIA_RLINE.md`](GUIA_RLINE.md).
 Para variantes e regressões EPA, consulte

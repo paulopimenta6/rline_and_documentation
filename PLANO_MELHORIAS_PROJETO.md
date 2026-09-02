@@ -45,7 +45,7 @@ Os principais componentes são:
 | Automação | `scripts/` | Geração, execução, pós-processamento e testes |
 | Dados oficiais | `RLINE_v1_2.Example_Cases/` e `RLINE_v1_2.Evaluation_Data/` | Casos EPA para regressão científica |
 
-## Status da implementação em 2026-08-27
+## Status da implementação em 2026-09-02
 
 As fases deste plano foram implementadas. As seções seguintes preservam o
 diagnóstico e a sequência originalmente propostos; portanto, expressões como
@@ -58,7 +58,7 @@ das mudanças, não o estado atual do workspace.
 | Fase 1 - correções numéricas críticas | Implementada | oito patches ordenados e auditáveis, aplicados somente em `build/`; builds corrigidos release e debug |
 | Fase 2 - execução segura e transacional | Implementada | workspaces exclusivos, locks, exit code preservado, timeout com `TERM`/`KILL` do grupo, substituição atômica por arquivo com rollback do conjunto, logs e manifestos exclusivos |
 | Fase 3 - dados, parsing e configuração | Implementada | pacote `rline_pipeline`, JSON Schema v1, geração determinística, parsers estritos, última linha RLINE preservada e merge bijetivo `one_to_one` |
-| Fase 4 - testes científicos | Implementada | T1-T8 reforçados, inclusive `1/20 <= max(AERMOD)/max(RLINE) <= 20` no T8; 72 testes rápidos coletados; quatro regressões EPA automatizadas |
+| Fase 4 - testes científicos | Implementada | T1-T4 como gates estruturais; T5-T8 descritivos com FB, NMSE, FAC2, erro log, picos e zeros; quatro regressões EPA automatizadas |
 | Fase 5 - build, dependências e CI | Implementada | `Makefile` raiz, artefatos isolados em `build/`, `pyproject.toml`, `uv.lock`, CI rápida e regressão semanal/manual |
 | Fase 6 - visualização e documentação | Implementada | geometria, pivot, transectos e rótulos corrigidos; guias, `CONTRIBUTING.md`, `NOTICE` e documentação de reprodutibilidade atualizados sem inferir licença para componentes de terceiros |
 
@@ -406,7 +406,7 @@ Planejamento:
 - conferir as coordenadas contra a grade declarada no JSON;
 - verificar unicidade e identidade dos períodos;
 - exigir correlação positiva antes de calcular R²;
-- exigir `1/20 <= max_RLINE/max_AERMOD <= 20`;
+- substituir limites pós-hoc entre modelos por métricas descritivas complementares;
 - registrar e verificar o manifesto da execução.
 
 ### M8. `config.json` não é a fonte de verdade efetiva

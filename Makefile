@@ -3,9 +3,10 @@ SHELL := /bin/bash
 .PHONY: all release debug aermet aermod rline-original models \
 	build-aermet build-aermod build-rline-original \
 	rline-release rline-debug rline-prepare-release rline-prepare-debug \
-	rline-provenance-check clean clean-aermet clean-aermod \
+	rline-provenance-check aermet-provenance-check aermod-provenance-check \
+	model-provenance-check clean clean-aermet clean-aermod \
 	clean-rline-original rline-clean test test-rline quality \
-	scientific-regression
+	scientific-regression quality-report example-data
 
 PYTHON ?= python3
 BUILD_DIR := build
@@ -13,12 +14,14 @@ BUILD_DIR := build
 AERMET_SOURCE_DIR := aermet_and_aermod/aermet_source
 AERMET_BUILD_DIR := $(BUILD_DIR)/aermet
 AERMET_EXE := $(AERMET_BUILD_DIR)/aermet
-AERMET_SOURCES := $(wildcard $(AERMET_SOURCE_DIR)/*.f90)
+AERMET_MANIFEST := provenance/AERMET_v26135_SNAPSHOT_SHA256.txt
+AERMET_SOURCES := $(shell awk 'NF == 2 {print $$2}' $(AERMET_MANIFEST))
 
 AERMOD_SOURCE_DIR := aermet_and_aermod/aermod_source/aermod_source_v26135
 AERMOD_BUILD_DIR := $(BUILD_DIR)/aermod
 AERMOD_EXE := $(AERMOD_BUILD_DIR)/aermod
-AERMOD_SOURCES := $(wildcard $(AERMOD_SOURCE_DIR)/*.f)
+AERMOD_MANIFEST := provenance/AERMOD_v26135_SNAPSHOT_SHA256.txt
+AERMOD_SOURCES := $(shell awk 'NF == 2 {print $$2}' $(AERMOD_MANIFEST))
 
 RLINE_ORIGINAL_SOURCE_DIR := RLINE_v1_2.Source/v1_2
 RLINE_ORIGINAL_BUILD_DIR := $(BUILD_DIR)/rline-original
@@ -36,7 +39,7 @@ debug: rline-debug
 
 models: aermet aermod rline-original rline-release
 
-aermet: $(AERMET_EXE)
+aermet: aermet-provenance-check $(AERMET_EXE)
 
 build-aermet: aermet
 
@@ -47,7 +50,7 @@ $(AERMET_EXE): $(AERMET_SOURCES) $(AERMET_SOURCE_DIR)/Makefile
 	$(MAKE) --no-print-directory -C "$(AERMET_BUILD_DIR)" all
 	test -x "$@"
 
-aermod: $(AERMOD_EXE)
+aermod: aermod-provenance-check $(AERMOD_EXE)
 
 build-aermod: aermod
 
@@ -75,6 +78,15 @@ $(RLINE_ORIGINAL_EXE): $(RLINE_ORIGINAL_SOURCES) \
 
 rline-provenance-check:
 	sha256sum --check --strict "$(RLINE_MANIFEST)"
+
+aermet-provenance-check:
+	sha256sum --check --strict "$(AERMET_MANIFEST)"
+
+aermod-provenance-check:
+	sha256sum --check --strict "$(AERMOD_MANIFEST)"
+
+model-provenance-check: aermet-provenance-check aermod-provenance-check \
+	rline-provenance-check
 
 rline-release: rline-provenance-check
 	$(MAKE) --no-print-directory -f "$(RLINE_BUILD_MAKEFILE)" \
@@ -120,3 +132,9 @@ quality:
 
 scientific-regression: models
 	$(PYTHON) scripts/scientific_regression.py
+
+quality-report:
+	$(PYTHON) scripts/gerar_resumo_qualidade.py
+
+example-data:
+	$(PYTHON) scripts/gerar_dados_exemplo.py

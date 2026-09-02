@@ -67,11 +67,17 @@ in source trees.
 | `make rline-debug` | `build/rline-patched-debug/RLINEv1_2_patched_debug.x` |
 | `make models` | AERMET, AERMOD, original RLINE, and corrected release RLINE |
 
-`make rline-release` and `make rline-debug` first execute
-`rline-provenance-check`. The check verifies all 29 upstream Fortran files and
-the upstream `Makefile.gfortran` against
+`make models` first checks the three local source snapshots. AERMET and AERMOD
+are checked against the manifests under `provenance/`; these manifests establish
+local identity but do not, without a recorded official ZIP hash, prove official
+download equivalence. RLINE is checked against
 `patches/rline-v1.2/UPSTREAM_SHA256.txt`. The corrected build then normalizes
 line endings in its copied tree and applies all eight patches with zero fuzz.
+
+The four historical comparisons under `casos/` have a
+`baseline-manifest.json`. It verifies their controls, outputs and exact shared
+meteorology before analysis, so a clean checkout does not depend on ignored
+per-case meteorology copies.
 
 Each corrected build writes `BUILD-INFO.txt` with the variant, compiler flags,
 compiler version, executable checksum, and patch checksums. The debug target

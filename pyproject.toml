@@ -25,7 +25,7 @@ dev = [
 include = ["rline_pipeline*"]
 
 [tool.setuptools.package-data]
-rline_pipeline = ["schemas/*.json"]
+rline_pipeline = ["schemas/*.json", "policies/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

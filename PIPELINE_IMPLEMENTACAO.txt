@@ -8,9 +8,10 @@ Modelos : AERMET v26135, AERMOD v26135, RLINE v1.2 standalone
 Objetivo: build isolado, execução transacional, análise validada e regressão
           científica reproduzível para fontes rodoviárias.
 
-O AERMOD contém a fonte RLINE nativa desde a v22112. O repositório usa a
-v26135. A comparação com o RLINE standalone é uma verificação científica, não
-aprovação regulatória.
+A fonte RLINE apareceu como opção beta no AERMOD v19191, foi reformulada na
+v23132 e passou à configuração regulatória na v24142. O repositório usa a
+v26135. A comparação com o RLINE standalone histórico é descritiva, não prova
+equivalência nem aprovação regulatória.
 
 --------------------------------------------------------------------------------
 1. VARIANTES E PROVENIÊNCIA
@@ -462,22 +463,22 @@ T2. RLINE
 T3. Merge
     Exige correspondência bijetiva e merge one-to-one completo.
 
-T4. Domínio
-    Exige concentrações finitas e estritamente positivas.
+T4. Domínio (gate estrutural)
+    Exige concentrações finitas e não negativas; zeros são válidos e contados.
 
-T5. Correlação global
-    Exige correlação log positiva e R2 >= 0.85. Quando a rodovia cobre menos de
-    60% da extensão X da grade, o limite é 0.65.
+T5. Intercomparação (informativo)
+    Relata correlação e R2 em log, somente nos pares estritamente positivos.
 
-T6. Correlação no trecho
-    Exige correlação log positiva e R2 >= 0.95 nos receptores cuja coordenada X
-    pertence ao segmento real da rodovia.
+T6. Concordância (informativo)
+    Relata viés fracional (FB), NMSE e FAC2.
 
-T7. Razão mediana
-    Exige 0.30 <= mediana(AERMOD/RLINE) <= 1.20.
+T7. Erro log (informativo)
+    Relata mediana e percentil 95 do erro log absoluto.
 
-T8. Escala bilateral
-    Exige 1/20 <= max(AERMOD)/max(RLINE) <= 20.
+T8. Picos e zeros (informativo)
+    Relata FB dos 25 maiores valores e pares zero concordantes/discordantes.
+
+Somente T1-T4 são gates. T5-T8 não possuem limiar pós-hoc de aprovação.
 
 Comando:
 

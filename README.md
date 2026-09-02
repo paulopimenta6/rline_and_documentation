@@ -5,9 +5,11 @@ repositório compila AERMET v26135, AERMOD v26135 e duas variantes do RLINE v1.2
 executa os modelos em áreas temporárias e valida os resultados antes de
 publicá-los.
 
-O AERMOD contém a fonte `RLINE` nativa desde a v22112. Neste projeto, sua saída
-é comparada com o RLINE v1.2 standalone. Essa comparação é evidência técnica,
-não aprovação regulatória nem endosso da EPA.
+A fonte `RLINE` apareceu como opção beta no AERMOD v19191, foi reformulada na
+v23132 e passou à configuração regulatória na v24142. Este projeto usa AERMOD
+v26135 e o compara com o RLINE v1.2 standalone histórico. São implementações e
+épocas diferentes: a comparação é descritiva, não prova equivalência, aprovação
+regulatória nem endosso da EPA.
 
 ## Estado atual
 
@@ -77,9 +79,12 @@ rode pipelines completos em um worktree descartável, conforme
 | Comando | O que verifica |
 |---|---|
 | `make models` | builds isolados de AERMET, AERMOD, RLINE original e RLINE corrigido release |
+| `make model-provenance-check` | identidade SHA-256 dos snapshots locais AERMET, AERMOD e RLINE |
 | `make rline-debug` | RLINE corrigido com checks, inicialização sentinela e traps IEEE |
-| `make test` | suíte rápida, excluindo testes marcados como científicos; 72 testes no estado de 2026-08-27 |
+| `make test` | suíte rápida, excluindo testes marcados como científicos |
 | `make quality` | Ruff e sintaxe de todos os scripts Shell rastreados ou não ignorados |
+| `make quality-report` | contrato JSON do painel em `build/reports/quality-summary.json` |
+| `make example-data` | exemplo sintético 24 h e grade 5 x 5 em `build/examples/` |
 | `make scientific-regression` | testes rápidos, casos versionados e regressões EPA em diretórios temporários |
 | `RUN_FULL_PIPELINE=1 make scientific-regression` | acrescenta o pipeline canônico completo e, depois, os quatro casos configurados |
 | `make clean` | remove somente a árvore reconstruível `build/` |
@@ -233,11 +238,15 @@ usa o RLINE corrigido e deve ser identificada por seu manifesto.
 | T1 | relatório AERMOD concluído, zero erros fatais, horas, grade e receptores completos |
 | T2 | RLINE com todos os receptores e exatamente todos os períodos esperados |
 | T3 | merge AERMOD/RLINE bijetivo e completo (`one_to_one`) |
-| T4 | concentrações finitas e estritamente positivas |
-| T5 | correlação log positiva e R² global >= 0,85; limite 0,65 quando a rodovia cobre menos de 60% da extensão X da grade |
-| T6 | correlação log positiva e R² no trecho real da rodovia >= 0,95 |
-| T7 | razão mediana AERMOD/RLINE entre 0,30 e 1,20 |
-| T8 | escala bilateral: `1/20 <= max(AERMOD)/max(RLINE) <= 20` |
+| T4 | concentrações finitas e não negativas; zeros são contabilizados |
+| T5 | informação: correlação e R² em log, com número de pares positivos |
+| T6 | informação: FB, NMSE e FAC2 |
+| T7 | informação: mediana e percentil 95 do erro log absoluto |
+| T8 | informação: FB dos 25 maiores valores e concordância/discordância de zeros |
+
+Somente T1–T4 são gates estruturais. T5–T8 caracterizam a intercomparação entre
+modelos e não têm limiar de aprovação pós-hoc. A política versionada está em
+`rline_pipeline/policies/validation-policy-v1.json`.
 
 ## Regressão EPA
 
@@ -298,6 +307,12 @@ build/                           artefatos locais ignorados pelo Git
   histórico e status de implementação.
 - [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): política de
   reprodutibilidade e goldens.
+- [`docs/GUIA_PROJETO.md`](docs/GUIA_PROJETO.md): arquitetura, execução segura,
+  limitações e manutenção.
+- [`docs/FORMATOS_DE_ENTRADA.md`](docs/FORMATOS_DE_ENTRADA.md): contrato do
+  `config.json` e formatos de entrada dos três modelos.
+- [`docs/VALIDACAO_CIENTIFICA.md`](docs/VALIDACAO_CIENTIFICA.md): classes de
+  evidência, métricas e critérios para validação de campo.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): regras para contribuições.
 - [`NOTICE`](NOTICE): proveniência e avisos; consulte também os termos presentes
   em cada distribuição upstream.

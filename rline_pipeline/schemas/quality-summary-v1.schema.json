@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Resumo de qualidade RLINE/AERMOD v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "structural_status", "policy", "indicators", "cases", "limitations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "structural_status": {"enum": ["pass", "fail"]},
+    "policy": {"type": "object"},
+    "indicators": {
+      "type": "object",
+      "required": ["cases_total", "cases_structurally_valid", "baselines_verified", "structural_pass_rate", "manifest_completeness_rate"],
+      "properties": {
+        "cases_total": {"type": "integer", "minimum": 0},
+        "cases_structurally_valid": {"type": "integer", "minimum": 0},
+        "baselines_verified": {"type": "integer", "minimum": 0},
+        "structural_pass_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "manifest_completeness_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "python_line_coverage": {"type": "null"},
+        "deterministic_run_rate": {"type": "null"},
+        "golden_conformance_rate": {"type": "null"}
+      },
+      "additionalProperties": false
+    },
+    "cases": {"type": "array", "items": {"type": "object"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

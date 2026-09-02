@@ -7,6 +7,8 @@ import pytest
 
 from rline_pipeline import (
     PipelineValidationError,
+    calculate_metrics,
+    load_case_config,
     merge_one_to_one,
     parse_aermod,
     parse_rline,
@@ -101,6 +103,66 @@ def test_tolerant_merge_is_bijective_without_rounding() -> None:
     merged = merge_one_to_one(aermod, rline, coordinate_tolerance=0.001)
     assert merged["X"].tolist() == [0.0, 1.0]
     assert merged["ratio"].tolist() == [2.0, 2.0]
+
+
+def test_tolerant_merge_scales_to_large_coordinate_sets() -> None:
+    size = 100_000
+    coordinates = pd.Series(range(size), dtype="float64")
+    aermod = pd.DataFrame(
+        {"X": coordinates, "Y": 0.0, "conc": 2.0}
+    )
+    rline = pd.DataFrame(
+        {"X": coordinates + 0.0005, "Y": 0.0, "C": 1.0}
+    )
+
+    merged = merge_one_to_one(aermod, rline, coordinate_tolerance=0.001)
+
+    assert len(merged) == size
+    assert merged["ratio"].eq(2.0).all()
+
+
+def test_agreement_metrics_expose_high_error_hidden_by_correlation(
+    case_paths: dict[str, Path],
+) -> None:
+    config = load_case_config(case_paths["caso1_referencia"] / "config.json")
+    rline = pd.Series(10.0 ** (pd.Series(range(100), dtype=float) * 4.0 / 99.0))
+    ratios = pd.Series([1.0] * 51 + [10.0] * 49)
+    merged = pd.DataFrame(
+        {
+            "X": pd.Series(range(100), dtype=float),
+            "Y": 0.0,
+            "C": rline,
+            "conc": rline * ratios,
+        }
+    )
+
+    metrics = calculate_metrics(merged, config)
+
+    assert metrics["r2_global"] is not None and metrics["r2_global"] > 0.95
+    assert metrics["ratio_mediana"] == pytest.approx(1.0)
+    assert metrics["fac2"] == pytest.approx(0.51)
+    assert metrics["p95_abs_log10_error"] == pytest.approx(1.0)
+
+
+def test_zero_concentrations_are_structurally_valid_but_reported(
+    case_paths: dict[str, Path],
+) -> None:
+    config = load_case_config(case_paths["caso1_referencia"] / "config.json")
+    merged = pd.DataFrame(
+        {
+            "X": [0.0, 1.0, 2.0, 3.0],
+            "Y": [0.0, 0.0, 0.0, 0.0],
+            "conc": [0.0, 1.0, 2.0, 0.0],
+            "C": [0.0, 1.0, 1.0, 1.0],
+        }
+    )
+
+    metrics = calculate_metrics(merged, config)
+
+    assert metrics["zero_agreement_count"] == 1
+    assert metrics["zero_mismatch_count"] == 1
+    assert metrics["positive_pair_count"] == 2
+    assert metrics["correlacao_log"] is None
 
 
 def test_concentration_pivot_is_independent_of_row_order() -> None:

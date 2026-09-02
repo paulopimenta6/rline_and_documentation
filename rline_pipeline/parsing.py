@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 from datetime import date
+from itertools import product
+import math
 from pathlib import Path
 import re
 from typing import Collection, Sequence
@@ -144,21 +146,52 @@ def coordinate_mapping(
 
     left_values = left[columns].to_numpy(dtype=float)
     right_values = right[columns].to_numpy(dtype=float)
-    candidates = np.all(
-        np.abs(left_values[:, np.newaxis, :] - right_values[np.newaxis, :, :]) <= tolerance,
-        axis=2,
-    )
-    left_counts = candidates.sum(axis=1)
-    right_counts = candidates.sum(axis=0)
-    if not np.equal(left_counts, 1).all() or not np.equal(right_counts, 1).all():
-        bad_left = np.flatnonzero(left_counts != 1)[:5].tolist()
-        bad_right = np.flatnonzero(right_counts != 1)[:5].tolist()
+    if not np.isfinite(left_values).all() or not np.isfinite(right_values).all():
+        raise PipelineValidationError(
+            f"coordenadas nao finitas entre {labels[0]} e {labels[1]}"
+        )
+
+    # A matriz cartesiana N x N usada anteriormente tornava o fallback por
+    # tolerancia inviavel para grades grandes. Um indice espacial por celulas
+    # de lado igual a tolerancia limita a busca a 3**dim celulas vizinhas sem
+    # alterar o criterio componente-a-componente usado pela API.
+    buckets: dict[tuple[int, ...], list[int]] = {}
+    for right_index_value, values in enumerate(right_values):
+        key = tuple(math.floor(float(value) / tolerance) for value in values)
+        buckets.setdefault(key, []).append(right_index_value)
+
+    offsets = tuple(product((-1, 0, 1), repeat=len(columns)))
+    mapping = np.full(len(left_values), -1, dtype=np.int64)
+    used_right: set[int] = set()
+    bad_left: list[int] = []
+    for left_index_value, values in enumerate(left_values):
+        key = tuple(math.floor(float(value) / tolerance) for value in values)
+        matches: list[int] = []
+        for offset in offsets:
+            neighbour = tuple(cell + delta for cell, delta in zip(key, offset, strict=True))
+            for right_index_value in buckets.get(neighbour, ()):
+                if np.all(np.abs(values - right_values[right_index_value]) <= tolerance):
+                    matches.append(right_index_value)
+                    if len(matches) > 1:
+                        break
+            if len(matches) > 1:
+                break
+        if len(matches) != 1 or matches[0] in used_right:
+            bad_left.append(left_index_value)
+            if len(bad_left) >= 5:
+                break
+            continue
+        mapping[left_index_value] = matches[0]
+        used_right.add(matches[0])
+
+    if bad_left or len(used_right) != len(right_values):
+        bad_right = [index for index in range(len(right_values)) if index not in used_right][:5]
         raise PipelineValidationError(
             f"correspondencia por tolerancia {tolerance:g} nao e bijetiva entre "
             f"{labels[0]} e {labels[1]}; indices ambiguos/ausentes: "
             f"{labels[0]}={bad_left}, {labels[1]}={bad_right}"
         )
-    return candidates.argmax(axis=1)
+    return mapping
 
 
 def _validate_expected_coordinates(
@@ -188,6 +221,8 @@ def parse_aermod(
     expected_periods: int | None = None,
     expected_coordinates: pd.DataFrame | None = None,
     coordinate_tolerance: float | None = None,
+    expected_group: str | None = None,
+    expected_netid: str | None = None,
 ) -> pd.DataFrame:
     """Le ``CONC_PLOT.PLT`` e valida estrutura, finitude e cardinalidade."""
 
@@ -255,6 +290,12 @@ def parse_aermod(
         raise PipelineValidationError(
             f"{source}: NHRS={counts}, esperado={expected_periods} em cada receptor"
         )
+    for column, expected in (("GRP", expected_group), ("NETID", expected_netid)):
+        if expected is not None and not frame[column].eq(expected).all():
+            values = sorted(frame[column].astype(str).unique().tolist())
+            raise PipelineValidationError(
+                f"{source}: {column}={values}, esperado={expected!r} em cada receptor"
+            )
     _validate_expected_coordinates(frame, expected_coordinates, source, coordinate_tolerance)
     return frame
 

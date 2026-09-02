@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "title": "RLINE/AERMOD evidence policy",
+  "evidence_classes": {
+    "software_regression": {
+      "gate": true,
+      "purpose": "Detect unintended numerical drift against immutable golden outputs.",
+      "claim_limit": "Compatibility and deterministic reproducibility only."
+    },
+    "model_intercomparison": {
+      "gate": false,
+      "purpose": "Describe differences between AERMOD RLINE and standalone RLINE 1.2.",
+      "claim_limit": "No equivalence, regulatory approval, or external validity claim."
+    },
+    "field_validation": {
+      "gate": false,
+      "purpose": "Compare modeled concentrations with independent field observations.",
+      "claim_limit": "Descriptive until acceptance thresholds are registered before analysis."
+    }
+  },
+  "reported_metrics": [
+    "fractional_bias",
+    "absolute_fractional_bias",
+    "nmse",
+    "correlacao_log",
+    "r2_global",
+    "correlacao_log_trecho",
+    "r2_trecho",
+    "fac2",
+    "median_abs_log10_error",
+    "p95_abs_log10_error",
+    "peak25_fractional_bias",
+    "zero_agreement_count",
+    "zero_mismatch_count"
+  ],
+  "dashboard_targets": {
+    "structural_pass_rate": 1.0,
+    "deterministic_run_rate": 1.0,
+    "golden_conformance_rate": 1.0,
+    "manifest_completeness_rate": 1.0,
+    "python_line_coverage": 0.9
+  }
+}

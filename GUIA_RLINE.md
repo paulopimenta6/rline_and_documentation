@@ -310,7 +310,8 @@ um-para-um sem arredondar coordenadas.
 
 Veja o documento **[`PLANO_Compilacao_Uso_RLINE.md`](PLANO_Compilacao_Uso_RLINE.md)** para aprender a **compilar o modelo** e **rodá-lo** com os dados de exemplo, com os dados de avaliação e com **seus próprios dados**.
 
-> A fonte `RLINE` está implementada no AERMOD desde a **v22112**. Para o
+> A fonte `RLINE` apareceu como opção beta no AERMOD v19191, foi reformulada na
+> v23132 e passou à configuração regulatória na v24142. Para o
 > pipeline AERMET -> AERMOD v26135 -> RLINE standalone corrigido, incluindo
 > execução transacional, resultados históricos e regressão científica,
 > consulte

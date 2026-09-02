@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "evidence_class": "legacy-baseline",
+  "model_context": {
+    "aermod_version": "26135",
+    "aermet_version": "26135",
+    "rline_variant": "upstream-original-historical"
+  },
+  "shared_inputs": {
+    "meteorology_sfc": {
+      "path": "Caso_Pipeline/dados_aermet/ONSITE.SFC",
+      "sha256": "fde74d68a26a9769330ab03a8ce697f2fde8b19a5d6cbb9ab672b14385d98960"
+    },
+    "meteorology_pfl": {
+      "path": "Caso_Pipeline/dados_aermet/ONSITE.PFL",
+      "sha256": "85c82928b18f4073d14d88851d9e2fec9e737f591bde72aa3d7879817c8c2210"
+    }
+  },
+  "files": {
+    "config.json": "e81bba8bf88c7a3c42e54fa1061c25c0f0ab5df24c582b2bd0704aa5881115e0",
+    "controles_aermod/RLINE_TEST.INP": "377bf9a13432b4df1946fe38081f3d59de065bd97ff3f7d510f4009bfa7178c5",
+    "rodada_aermod/CONC_PLOT.PLT": "4878a4c2e6f7e35913d17668e1d9806f36f1c597f810fcda887c3becda9cc8b8",
+    "rodada_aermod/RLINE_TEST.out": "a3e7ac9f3d3113c37fb93dfaa0981f8a58b42bb3e8930ea5bfdb2e8d4b0f4b17",
+    "rodada_rline/Line_Source_Inputs.txt": "a2063df1424ff3573b626d5c0f431b2832e886a052ee469a84a73bc2ac6cd8be",
+    "rodada_rline/Output_Road_Numerical.csv": "14b490a918fd83445dc2ddab63f7e777038b116bee050e01104414fd99660ab2",
+    "rodada_rline/Output_Road_Numerical_DailyAve.csv": "918ebef1d0b0e9bbe02f2fbda1a93cf23ba34c911b35f2460d406a689793c3bf",
+    "rodada_rline/Receptor_Road.txt": "23040854b3c3b140f344e6049ccab2a46f227d1af7e55577feddd314263536a2",
+    "rodada_rline/Source_Road.txt": "74d810547af0e92dd7b411bb11f516abe29ed1119f696d3dea28f8aaa21d7535"
+  },
+  "limitations": [
+    "Baseline de compatibilidade; nao demonstra aprovacao regulatoria nem validade externa."
+  ]
+}

@@ -113,7 +113,8 @@ def test_validation_cli_reports_all_configured_cases(
     assert "Casos reportados: 4/4" in output
     for name in case_paths:
         assert f"=== {name} ===" in output
-    assert "T8 escala bilateral" in output
+    assert "T8 INFO picos/zeros" in output
+    assert "INTERCOMPARACAO REPORTADA SEM GATE CIENTIFICO" in output
 
 
 def test_real_plots_are_written_only_to_tmp(tmp_path: Path, real_results: dict[str, tuple]) -> None:
