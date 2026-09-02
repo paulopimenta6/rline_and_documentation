@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "nome": "caso4_rodovia_larga",
   "descricao": "Rodovia larga (pista dupla, 40 m) com mesma emissao por area que o caso 1",
   "comprimento": 1000.0,
@@ -7,5 +8,6 @@
   "width": 40.0,
   "grid": {"xini": 0.0, "xn": 21, "xdelta": 40.0,
            "yini": -200.0, "yn": 21, "ydelta": 20.0},
-  "transecto_x": 600.0
+  "transecto_x": 600.0,
+  "periodos_esperados": 120
 }

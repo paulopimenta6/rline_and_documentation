@@ -1,0 +1,246 @@
+--- /dev/null
++++ b/RLINE_Validation.f90
+@@ -0,0 +1,97 @@
++      module RLINE_Validation
++
++      use Data_Structures, only: AVSurfaceMet, double
++      use ieee_arithmetic, only: ieee_is_finite
++      use iso_fortran_env, only: error_unit
++      implicit none
++      private
++
++      public :: Meteorology_Is_Valid, Require_Allocation, Require_IO
++
++      contains
++
++      subroutine Require_Allocation(status, operation)
++        integer, intent(in) :: status
++        character(len=*), intent(in) :: operation
++
++        if (status /= 0) then
++          write(error_unit,'(A,I0)') "RLINE allocation error during "//trim(operation)// &
++                                     "; status=",status
++          error stop 1
++        end if
++      end subroutine Require_Allocation
++
++      subroutine Require_IO(status, operation, io_message)
++        integer, intent(in) :: status
++        character(len=*), intent(in) :: operation, io_message
++
++        if (status /= 0) then
++          write(error_unit,'(A)') "RLINE I/O error while "//trim(operation)//": "// &
++                                  trim(io_message)
++          error stop 1
++        end if
++      end subroutine Require_IO
++
++      logical function Meteorology_Is_Valid(met, reason)
++        type(AVSurfaceMet), intent(in) :: met
++        character(len=*), intent(out) :: reason
++
++        Meteorology_Is_Valid=.false.
++        reason=""
++
++        if (met%Month < 1 .or. met%Month > 12 .or. &
++            met%Day < 1 .or. met%Day > 31 .or. &
++            met%J_Day < 1 .or. met%J_Day > 366 .or. &
++            met%Hour < 1 .or. met%Hour > 24) then
++          reason="invalid date/hour fields"
++          return
++        end if
++
++        if (.not. all(ieee_is_finite((/ met%Hs,met%Ustar,met%Wstar,met%CBL, &
++                                       met%SBL,met%Lmon,met%z0,met%Ws,met%Wd, &
++                                       met%zref /)))) then
++          reason="non-finite mandatory field"
++          return
++        end if
++
++        if (met%Hs == -999.0_double) then
++          reason="missing sensible heat flux"
++          return
++        end if
++        if (met%Ustar <= 0.0_double) then
++          reason="friction velocity must be positive"
++          return
++        end if
++        if (met%Hs > 0.0_double .and. met%Wstar < 0.0_double) then
++          reason="convective velocity must be nonnegative in unstable conditions"
++          return
++        end if
++        if (max(met%CBL,met%SBL) <= 0.0_double) then
++          reason="mixing height must be positive"
++          return
++        end if
++        if (abs(met%Lmon) <= tiny(met%Lmon)) then
++          reason="Monin-Obukhov length must be nonzero"
++          return
++        end if
++        if (met%z0 <= 0.0_double) then
++          reason="roughness length must be positive"
++          return
++        end if
++        if (met%Ws <= 0.0_double) then
++          reason="wind speed must be positive"
++          return
++        end if
++        if (met%Wd < 0.0_double .or. met%Wd > 360.0_double) then
++          reason="wind direction must be in [0, 360] degrees"
++          return
++        end if
++        if (met%zref <= 0.0_double) then
++          reason="wind reference height must be positive"
++          return
++        end if
++
++        Meteorology_Is_Valid=.true.
++      end function Meteorology_Is_Valid
++
++      end module RLINE_Validation
+--- a/Compute_File_Size.f90
++++ b/Compute_File_Size.f90
+@@ -21,30 +21,41 @@
+ !     Determines the number of entries in an input file
+ ! -----------------------------------------------------------------------------------
+ 
++      use RLINE_Validation, only: Require_IO
++      implicit none
++
+ ! Arguments:
+-      Character(len=40), Intent(IN) :: FileName  ! Name of file whose size is required
++      Character(len=*), Intent(IN)  :: FileName  ! Name of file whose size is required
+       Integer(4), Intent(OUT)       :: Size      ! Number of records in file
+ 
+ ! Local variables:
+-      Integer                       :: ReadStatus  ! Integer that indicates read status
+-      Character(40)                 :: Linetext
++      Integer                       :: ReadStatus, CloseStatus
++      Character(512)                :: Linetext
++      Character(256)                :: IOMessage
+ ! -----------------------------------------------------------------------------------
+ 
+-      Open(Unit=12, File=FileName, Status="Old", Action="Read")
++      Open(Unit=12, File=FileName, Status="Old", Action="Read", &
++           Iostat=ReadStatus, Iomsg=IOMessage)
++      Call Require_IO(ReadStatus,"opening "//trim(FileName),IOMessage)
+ 
+ ! ----Read input file
+ 
+       Size=0
+       do ! until ReadStatus < 0
+-        Read(12,*, Iostat=ReadStatus)Linetext
++        Read(12,'(A)', Iostat=ReadStatus, Iomsg=IOMessage)Linetext
+ ! ----  Check for end of data
+         if (ReadStatus<0) then
+-          Close (Unit=12)
+           exit
++        else if (ReadStatus>0) then
++          Call Require_IO(ReadStatus,"counting records in "//trim(FileName),IOMessage)
+         end if
+-        if(index(linetext,'!').EQ.0) then
++        Linetext=adjustl(Linetext)
++        if(len_trim(Linetext)>0 .and. Linetext(1:1)/='!') then
+           Size=Size+1
+         end if
+       end do
+ 
+-      end subroutine 
+\ No newline at end of file
++      Close(Unit=12,Iostat=CloseStatus,Iomsg=IOMessage)
++      Call Require_IO(CloseStatus,"closing "//trim(FileName),IOMessage)
++
++      end subroutine 
+--- a/Read_Met_Inputs.f90
++++ b/Read_Met_Inputs.f90
+@@ -23,10 +23,13 @@
+ 
+       Use Data_Structures
+       Use Line_Source_Data
++      Use RLINE_Validation, only: Require_Allocation, Require_IO
++      Use iso_fortran_env, only: error_unit
+       Implicit None
+ 
+-      Integer    :: SizeSurf   ! Size of surface file
+-      Integer    :: AllocateStatus, ReadStatus, Index
++      Integer, Intent(Out) :: SizeSurf   ! Size of surface file
++      Integer    :: AllocateStatus, ReadStatus, CloseStatus, Index
++      Character(256) :: IOMessage, Operation
+ 
+ ! -------------------------------------------------------------------------------------  
+ 
+@@ -35,12 +38,25 @@
+ 
+ ! ----Read surface files
+       SizeSurf=SizeSurf-1
++      if (SizeSurf <= 0) then
++        write(error_unit,'(A)') "RLINE error: meteorological file has no data records: "// &
++                                trim(InputSurfaceFile)
++        error stop 1
++      end if
+       Allocate(SurfaceMet(SizeSurf),Stat=AllocateStatus)
+-      Open(Unit=10, File=InputSurfaceFile, Status="Old", Action="Read", Iostat=ReadStatus)
+-      Read(10,*)
++      Call Require_Allocation(AllocateStatus,"SurfaceMet")
++      Open(Unit=10, File=InputSurfaceFile, Status="Old", Action="Read", &
++           Iostat=ReadStatus, Iomsg=IOMessage)
++      Call Require_IO(ReadStatus,"opening "//trim(InputSurfaceFile),IOMessage)
++      Read(10,'(A)',Iostat=ReadStatus,Iomsg=IOMessage)Operation
++      Call Require_IO(ReadStatus,"reading meteorological header",IOMessage)
+       Do Index = 1,SizeSurf   
+-        Read(10,*)SurfaceMet(Index)
++        Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)SurfaceMet(Index)
++        Write(Operation,'(A,I0,A,A)') "reading meteorological record ",Index, &
++                                      " from ",trim(InputSurfaceFile)
++        Call Require_IO(ReadStatus,Operation,IOMessage)
+       End Do
+-      Close(Unit=10)
++      Close(Unit=10,Iostat=CloseStatus,Iomsg=IOMessage)
++      Call Require_IO(CloseStatus,"closing "//trim(InputSurfaceFile),IOMessage)
+ 
+-      End Subroutine
+\ No newline at end of file
++      End Subroutine
+--- a/RLINE_Main.f90
++++ b/RLINE_Main.f90
+@@ -35,6 +35,7 @@
+ 
+       Use Line_Source_Data
+       Use iso_fortran_env, only: error_unit
++      Use RLINE_Validation, only: Meteorology_Is_Valid, Require_Allocation
+       Implicit None
+ 
+       Interface
+@@ -53,7 +54,8 @@
+       Integer            :: index, isource, AllocateStatus,imet, igroup
+       Integer            :: SizeSurf
+       Integer            :: Nonconverged_Count
+-      Logical            :: Integration_Converged
++      Logical            :: Integration_Converged, Meteorology_Valid
++      Character(len=160) :: Meteorology_Reason
+       Real(kind=double)  :: start, finish 
+ ! -----------------------------------------------------------------------------------
+      
+@@ -74,6 +76,7 @@
+       Call Read_Met_Inputs(SizeSurf)
+ 
+       Allocate(Concentration(Number_Receptors,SizeSurf,Number_Groups),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Concentration")
+ 
+       Concd=0.0         ! Initialize Concentrations
+       Concentration=0.0
+@@ -91,9 +94,13 @@
+         end if
+ 
+         write(*,*) "Working on line ", imet, "of", SizeSurf, "in SFC-file..."
+-        if ((SurfaceMet(imet)%ustar.LE.0.0).OR.(SurfaceMet(imet)%Hs.EQ.-999.0)) then
++        Meteorology_Valid=Meteorology_Is_Valid(SurfaceMet(imet),Meteorology_Reason)
++        if (.not. Meteorology_Valid) then
++          write(error_unit,'(A,I0,A,A)') "RLINE warning: meteorological record ",imet, &
++                                        " rejected: ",trim(Meteorology_Reason)
+           Concentration(1:Number_Receptors,imet,:)=-99.0        
+         else
++          ueff=0.0_double
+           Call Fill_Met(imet)      ! Assign met variables
+           Call Compute_Met         ! Compute sigmav and Ueff and thetaw 
+           write(*,*) "Rotating to wind-direction coordinates..."

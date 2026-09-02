@@ -1,0 +1,199 @@
+--- a/Numerical_Line_Source.f90
++++ b/Numerical_Line_Source.f90
+@@ -13,7 +13,7 @@
+ ! General Public License is subject to their copyright restrictions.                  !
+ ! ----------------------------------------------------------------------------------- !
+ 
+-      subroutine Numerical_Line_Source(im,ir,Conc_Num,Err)
++      subroutine Numerical_Line_Source(im,ir,Conc_Num,Err,Converged)
+ ! -----------------------------------------------------------------------------------
+ !     Written by AV, MGS and DKH
+ !     RLINE v1.2, November 2013
+@@ -24,6 +24,7 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       use Line_Source_Data
++      use iso_fortran_env, only: error_unit
+       implicit none
+ 
+ ! External functions:
+@@ -33,6 +34,7 @@
+       integer, intent(in)             :: im,ir      ! met,receptor indices, respectively
+       real(kind=double), intent(out)  :: Conc_Num
+       real(kind=double), intent(out)  :: Err        ! The integration is set to an arbitrarily large value before it is reduced
++      logical, intent(out)            :: Converged
+ 
+       integer                         :: K=3  ! 2K is the order of Romberg integration.  Nmax needs to be greater than K
+                                               ! for Romberg integration to be used. Otherwise trapezoidal integration is used.
+@@ -44,8 +46,10 @@
+       integer                         :: AllocateStatus, AllocError
+       real(kind=double)               :: Conc_int               ! Numerical Integrals
+       real(kind=double)               :: X, Y,Z,delt,theta,phi
+-      real(kind=double)               :: t,tmax,cost,sint,sinp,cosp,Xrec,dr
++      real(kind=double)               :: t,tmax,cost,sint,sinp,cosp,dr
+       real(kind=double)               :: Xtemp,Ytemp,Ztemp
++      real(kind=double)               :: segment_norm2, projection, closest_x, closest_y, closest_z
++      real(kind=double)               :: geometry_scale, geometry_tolerance, log_argument
+       integer                         :: st, fi    ! Starting and finishing indices 
+ 
+ ! Parameters
+@@ -55,6 +59,8 @@
+ 
+ ! ----Initialize source and receptor variables     
+       Conc_Num=0.0
++      Err=huge(Err)
++      Converged=.false.
+ 
+ ! ----orient the end points so the begining has a lower Y value
+       if (Ysend < Ysbegin) then
+@@ -74,6 +80,14 @@
+       Zdif  = Zsend-Zsbegin
+       theta = datan2(Ydif,Xdif)
+       tmax  = sqrt(Xdif*Xdif+Ydif*Ydif+Zdif*Zdif)    
++      geometry_scale = max(1.0_double,abs(Xsbegin),abs(Ysbegin),abs(Zsbegin), &
++                           abs(Xsend),abs(Ysend),abs(Zsend))
++      geometry_tolerance = 100.0_double*epsilon(geometry_scale)*geometry_scale
++      if (tmax <= geometry_tolerance) then
++        write(error_unit,'(A,I0,A)') "RLINE error: zero-length source ",indq, &
++                                     " reached Numerical_Line_Source"
++        error stop 1
++      end if
+       phi   = asin(Zdif/(tmax+sm_num))  
+ 
+       sinp  = sin(phi)
+@@ -81,14 +95,26 @@
+       cost  = cos(theta)
+       sint  = sin(theta)
+ 
+-! ----Find x-coord of point on source line directly upwind of receptor
+-      Xrec = (Xsend -(Ysend-Yr_rot)*(Xsend-Xsbegin)/(Ysend-Ysbegin))
+-      dr   = abs(Xr_rot- Xrec)
++! ----Find the shortest receptor-to-segment distance without orientation singularities
++      segment_norm2 = Xdif*Xdif+Ydif*Ydif+Zdif*Zdif
++      projection = ((Xr_rot-Xsbegin)*Xdif+(Yr_rot-Ysbegin)*Ydif+ &
++                    (Zrecep-Zsbegin)*Zdif)/segment_norm2
++      projection = max(0.0_double,min(1.0_double,projection))
++      closest_x = Xsbegin+projection*Xdif
++      closest_y = Ysbegin+projection*Ydif
++      closest_z = Zsbegin+projection*Zdif
++      dr = sqrt((Xr_rot-closest_x)**2+(Yr_rot-closest_y)**2+ &
++                (Zrecep-closest_z)**2)
+       dr   = max(xd_min, dr)  ! This keeps the user from putting receptor on source
+ 
+ ! ----Convergence Criteria: Minimum Iteratons ------------    
+       if ((Yr_rot > Ysbegin-tmax/2*abs(cost)) .and. (Yr_rot < Ysend+tmax/2*abs(cost)))then              
+-        minj = ceiling(log(2.0*tmax/(max(xd_min,dr*abs(sint)))-2.0)/log(2.0))+2
++        log_argument = 2.0_double*tmax/max(xd_min,dr*abs(sint))-2.0_double
++        if (log_argument > 1.0_double) then
++          minj = ceiling(log(log_argument)/log(2.0_double))+2
++        else
++          minj = 0
++        end if
+       else 
+         minj = 0 ! set minj=0 so if receptor is upwind, the conc will converge quickly
+       end if
+@@ -102,7 +128,16 @@
+       end if
+ 
+       allocate(h(It_lim),Stat=AllocateStatus)
++      if (AllocateStatus /= 0) then
++        write(error_unit,'(A)') "RLINE error: unable to allocate Romberg step array"
++        error stop 1
++      end if
+       allocate(Conc(It_lim),Stat=AllocateStatus)
++      if (AllocateStatus /= 0) then
++        deallocate(h)
++        write(error_unit,'(A)') "RLINE error: unable to allocate Romberg concentration array"
++        error stop 1
++      end if
+ 
+ ! ----Compute Concentration at Receptor ------------
+       sigmaz0 = Source(indq)%init_sigmaz      
+@@ -138,11 +173,17 @@
+           
+ ! --------Check convergence criteria          
+           if ((abs(Err) < Error_Limit) .and. (j > minj)) then
+-            deallocate(h,Conc,Stat=AllocError)
+-            return
++            Converged=.true.
++            exit
+           end if
+         end if
+         Conc_Num = abs(Conc(j))
+       end do
+ 
++      deallocate(h,Conc,Stat=AllocError)
++      if (AllocError /= 0) then
++        write(error_unit,'(A)') "RLINE error: unable to release Romberg work arrays"
++        error stop 1
++      end if
++
+-      end
+\ No newline at end of file
++      end
+--- a/RLINE_Main.f90
++++ b/RLINE_Main.f90
+@@ -34,14 +34,26 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       Use Line_Source_Data
++      Use iso_fortran_env, only: error_unit
+       Implicit None
+ 
++      Interface
++        Subroutine Numerical_Line_Source(im,ir,Conc_Num,Err,Converged)
++          Import :: double
++          Integer, Intent(In) :: im, ir
++          Real(kind=double), Intent(Out) :: Conc_Num, Err
++          Logical, Intent(Out) :: Converged
++        End Subroutine Numerical_Line_Source
++      End Interface
++
+ ! Local variables:
+       Real(kind=double)  :: Error    !  Error in the numerical integration
+       Real(kind=double)  :: Concd    !  Dummy concentration at receptor
+       Real(kind=double)  :: Zb       !  Release height for barriers
+       Integer            :: index, isource, AllocateStatus,imet, igroup
+       Integer            :: SizeSurf
++      Integer            :: Nonconverged_Count
++      Logical            :: Integration_Converged
+       Real(kind=double)  :: start, finish 
+ ! -----------------------------------------------------------------------------------
+      
+@@ -65,6 +77,7 @@
+ 
+       Concd=0.0         ! Initialize Concentrations
+       Concentration=0.0
++      Nonconverged_Count=0
+ 
+       Do imet=1, SizeSurf
+         if (op_Analytical =='Y' .AND. imet == 1)then
+@@ -119,7 +132,15 @@
+                     Call Analytical_Line_Source(Concd)
+                     Error = 0.0
+                   else
+-                    Call Numerical_Line_Source(imet,index,Concd,Error)
++                    Call Numerical_Line_Source(imet,index,Concd,Error,Integration_Converged)
++                    if (.not. Integration_Converged) then
++                      Nonconverged_Count=Nonconverged_Count+1
++                      if (op_warn == 'N') then
++                        write(error_unit,'(A,3(I0,1X),A,ES12.4)') &
++                          "RLINE warning: integration did not converge for met/receptor/source ", &
++                          imet,index,indq,"estimated error ",Error
++                      end if
++                    end if
+                   end if
+                   Concentration(index,imet,igroup)=Concentration(index,imet,igroup)+Concd*1.0e06*Source(indq)%Qemis
+                 end if ! group_array loop
+@@ -129,6 +150,11 @@
+         end if
+       end do ! met loop
+ 
++      if (Nonconverged_Count > 0) then
++        write(error_unit,'(A,I0,A)') "RLINE warning: ",Nonconverged_Count, &
++                                     " numerical integrations did not converge"
++      end if
++
+ 
+       if (op_monthly =='M')then
+         write(*,*) "DONE computing"

@@ -46,7 +46,10 @@ O R-LINE usa uma fórmula clássica de dispersão atmosférica (a **formulação
 - ❌ **Somente fontes de linha** (rodovias) — não modela fontes de área, volume ou pontuais.
 - ❌ É um modelo de **estado estacionário** — calcula hora a hora, não a evolução contínua no tempo.
 - ❌ Fontes e receptores devem estar a, no mínimo, **1 metro** de distância (o modelo ajusta automaticamente).
-- ⚠️ Algumas opções avançadas (analítica, barreiras, rodovias deprimidas) ainda estão em fase **beta** (em desenvolvimento).
+- ⚠️ No upstream original, as opções analítica, de barreira e de rodovia
+  deprimida são marcadas como **beta**. A variante corrigida deste repositório
+  adiciona validações e correções, mas rejeita explicitamente uma segunda
+  barreira, que o cálculo v1.2 não implementa.
 
 ---
 
@@ -54,32 +57,49 @@ O R-LINE usa uma fórmula clássica de dispersão atmosférica (a **formulação
 
 ```
 rline_and_documentation/
-├── RLINE_UserGuide_11-13-2013.pdf        ← Manual oficial do usuário (versão 1.2, nov/2013)
-│
-├── RLINE_v1_2.Source/                    ← CÓDIGO-FONTE do modelo
-│   └── v1_2/
-│       ├── *.f90                         ← 29 arquivos Fortran
-│       ├── Makefile.ifort / .pgf90       ← Makefiles para compiladores Intel/PGI
-│       ├── Makefile.gfortran             ← Makefile para gfortran (adicionado neste projeto)
-│       ├── RLINEv1_2_gfortran.x          ← executável compilado com gfortran (Linux)
-│       └── RLINEv1_2.ifort.x, *.pgf90.x, *.exe  ← executáveis antigos de outras plataformas
-│
-├── RLINE_v1_2.Example_Cases/             ← EXEMPLO de uso (rodovias cruzadas)
-│   └── Example_case/
-│       ├── Line_Source_Inputs.txt        ← arquivo de controle principal
-│       ├── Source_Example.txt            ← fontes (coordenadas das pistas)
-│       ├── Source_Example_dCL.txt        ← mesmas fontes, usando método "centro + offset"
-│       ├── Receptor_Example.txt          ← 196 receptores
-│       └── Met_Example.sfc               ← meteorologia (10 horas)
-│
-└── RLINE_v1_2.Evaluation_Data/           ← DADOS DE AVALIAÇÃO (experimentos reais)
-    └── Evaluation_data/
-        ├── CALTRANS_RLINE/               ← Experimento de rastreador SF6, rodovia CA-99 (1989)
-        ├── IdahoFalls_RLINE/             ← Experimento SF6 com barreira (2009)
-        └── Raleigh_RLINE/                ← Experimento de NO, estrada interestadual (2006)
+├── RLINE_UserGuide_11-13-2013.pdf        ← manual do RLINE v1.2
+├── RLINE_v1_2.Source/v1_2/               ← snapshot upstream preservado
+│   ├── *.f90                             ← 29 arquivos Fortran
+│   └── Makefile.gfortran                 ← build da variante original
+├── patches/rline-v1.2/
+│   ├── UPSTREAM_SHA256.txt               ← identidade dos 29 fontes + Makefile
+│   ├── 0001-...patch a 0008-...patch     ← oito correções auditáveis
+│   └── Makefile                          ← staging e builds corrigidos
+├── build/                                ← artefatos locais, ignorados pelo Git
+│   ├── rline-original/
+│   ├── rline-patched/
+│   └── rline-patched-debug/
+├── RLINE_v1_2.Example_Cases/Example_case/
+├── RLINE_v1_2.Evaluation_Data/Evaluation_data/
+│   ├── CALTRANS_RLINE/
+│   ├── IdahoFalls_RLINE/
+│   └── Raleigh_RLINE/
+├── rline_pipeline/                       ← parsing, métricas e gráficos
+└── scripts/                              ← wrappers e orquestração
 ```
 
-### 3.1 Arquivos de código (resumo dos `.f90`)
+Os executáveis antigos rastreados nas distribuições são preservados como
+material histórico, mas não são o padrão dos wrappers.
+
+### 3.1 Variantes construídas
+
+```bash
+make rline-original
+make rline-release
+make rline-debug
+```
+
+| Variante | Binário |
+|---|---|
+| upstream original | `build/rline-original/RLINEv1_2_gfortran.x` |
+| corrigida release | `build/rline-patched/RLINEv1_2_patched.x` |
+| corrigida debug | `build/rline-patched-debug/RLINEv1_2_patched_debug.x` |
+
+O checksum do snapshot é validado antes da aplicação dos patches. As correções
+são aplicadas somente em `build/`, e cada build corrigido grava
+`BUILD-INFO.txt`.
+
+### 3.2 Arquivos de código (resumo dos `.f90`)
 
 | Arquivo | Função |
 |---|---|
@@ -90,6 +110,7 @@ rline_and_documentation/
 | `Analytical_Line_Source.f90`, `Analytical_Line_Parallel.f90` | Opção beta: solução analítica (mais rápida, menos precisa) |
 | `Barrier_Displacement.f90`, `Depressed_Displacement.f90` | Opção beta: barreiras e rodovias deprimidas |
 | `Write_Hourly_All.f90`, `Write_Hourly_by_Month.f90`, `Write_Daily_Ave.f90` | Escrevem os arquivos de saída |
+| `RLINE_Validation.f90` | Adicionado pelo patch `0004` somente à árvore corrigida em `build/` |
 
 ---
 
@@ -134,7 +155,8 @@ Ratio of displacement height to roughness length (fac_dispht)
 | 2 | Ativa algoritmos de **barreira lateral e rodovia deprimida** |
 | 3 | Ativa **largura inicial da pluma** (para simular rodovias largas como uma única fonte). Você também informa a **largura da faixa em metros** (ex.: `'Y' 3.6`) |
 
-⚠️ Cuidado: se você escolher `N` nas opções 2 e 3 ao mesmo tempo, o programa não gera **nenhum** arquivo de saída.
+⚠️ Cuidado: se a média diária (opção de saída 2) for `N` e a saída horária
+(opção de saída 3) também for `N`, o programa não gera arquivo de concentração.
 
 ### 4.2 Arquivo de fontes (ex.: `Source_Example.txt`)
 
@@ -189,7 +211,13 @@ Arquivo no formato de superfície do **AERMET**. A primeira linha é cabeçalho.
 | `Ws`, `Wd` | Velocidade (m/s) e direção (graus) do vento na altura de referência |
 | `zref` | Altura de referência do vento (m) |
 
-Se algum campo vier como `-999` (dado faltando), a saída daquela hora será **-99** em todos os receptores.
+No upstream original, a hora é marcada como ausente principalmente quando
+`u* <= 0` ou `Hs == -999`; outros campos inválidos podiam alcançar os cálculos.
+A variante corrigida valida finitude, data/hora e domínios físicos de `Hs`,
+`u*`, `w*`, alturas de mistura, `Lmo`, `z0`, vento e altura de referência. Um
+registro meteorológico inválido gera aviso e concentração **-99** para todos os
+receptores daquele período. Os parsers do pipeline rejeitam essa sentinela em
+casos que exigem todos os períodos válidos.
 
 ---
 
@@ -221,7 +249,37 @@ As colunas finais são as concentrações de cada grupo de fontes. Unidade: **µ
 
 ---
 
-## 6. Guia rápido de referência (tabela-resumo)
+## 6. Execução segura neste repositório
+
+O RLINE continua sem argumentos próprios e lê `Line_Source_Inputs.txt` do
+diretório corrente. Para uso normal, não copie nem execute um binário histórico
+manualmente. Use o wrapper transacional:
+
+```bash
+make rline-release
+bash scripts/run_rline.sh <diretorio_do_caso>
+```
+
+Sem um segundo argumento, o wrapper usa
+`build/rline-patched/RLINEv1_2_patched.x`. Para uma comparação explícita com o
+upstream:
+
+```bash
+bash scripts/run_rline.sh \
+  <diretorio_do_caso> \
+  build/rline-original/RLINEv1_2_gfortran.x
+```
+
+O wrapper valida os arquivos referenciados pelo controle, executa em workspace
+exclusivo, usa lock, mata o grupo de processos em timeout e só publica saídas
+novas validadas. Cada tentativa produz log e manifesto JSON em
+`<diretorio_do_caso>/logs/`.
+
+O pacote `rline_pipeline` lê todas as observações, inclusive a última linha do
+CSV, exige o conjunto completo de períodos por receptor e faz merge AERMOD/RLINE
+um-para-um sem arredondar coordenadas.
+
+## 7. Guia rápido de referência (tabela-resumo)
 
 | Conceito | Explicação |
 |---|---|
@@ -238,7 +296,7 @@ As colunas finais são as concentrações de cada grupo de fontes. Unidade: **µ
 
 ---
 
-## 7. Referências científicas
+## 8. Referências científicas
 
 - Snyder, M. G., Venkatram, A., Heist, D. K., Perry, S. G., Petersen, W. B., Isakov, V., 2013. *RLINE: A Line Source Dispersion Model for Near-Surface Releases.* Atmospheric Environment, 77, 748-756.
 - Venkatram, A., Snyder, M. G., Heist, D. K., Perry, S. G., Petersen, W. B., Isakov, V., 2013. *Re-formulation of Plume Spread for Near-Surface Dispersion.* Atmospheric Environment, 77, 846-855.
@@ -248,8 +306,12 @@ As colunas finais são as concentrações de cada grupo de fontes. Unidade: **µ
 
 ---
 
-## 8. Próximo passo
+## 9. Próximo passo
 
 Veja o documento **[`PLANO_Compilacao_Uso_RLINE.md`](PLANO_Compilacao_Uso_RLINE.md)** para aprender a **compilar o modelo** e **rodá-lo** com os dados de exemplo, com os dados de avaliação e com **seus próprios dados**.
 
-> 💡 **Desde 2022, o RLINE também está implementado no modelo regulatório AERMOD** (a partir da versão 24142, como fonte `RLINE`). Para ver o pipeline completo AERMET → AERMOD com fonte RLINE usado neste projeto (formato dos arquivos, control file, resultados e comparação com o RLINE v1.2 standalone), consulte o **[`GUIA_PIPELINE_AERMET_AERMOD_RLINE.md`](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md)**.
+> A fonte `RLINE` está implementada no AERMOD desde a **v22112**. Para o
+> pipeline AERMET -> AERMOD v26135 -> RLINE standalone corrigido, incluindo
+> execução transacional, resultados históricos e regressão científica,
+> consulte
+> [`GUIA_PIPELINE_AERMET_AERMOD_RLINE.md`](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md).

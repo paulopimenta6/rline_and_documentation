@@ -45,6 +45,46 @@ Os principais componentes são:
 | Automação | `scripts/` | Geração, execução, pós-processamento e testes |
 | Dados oficiais | `RLINE_v1_2.Example_Cases/` e `RLINE_v1_2.Evaluation_Data/` | Casos EPA para regressão científica |
 
+## Status da implementação em 2026-08-27
+
+As fases deste plano foram implementadas. As seções seguintes preservam o
+diagnóstico e a sequência originalmente propostos; portanto, expressões como
+"correção planejada" e "implementação futura" descrevem o estado auditado antes
+das mudanças, não o estado atual do workspace.
+
+| Fase | Status | Evidência implementada |
+|---|---|---|
+| Fase 0 - baseline e proveniência | Implementada | snapshot RLINE original preservado, 30 checksums em `UPSTREAM_SHA256.txt`, builds original/corrigido separados e manifestos de execução |
+| Fase 1 - correções numéricas críticas | Implementada | oito patches ordenados e auditáveis, aplicados somente em `build/`; builds corrigidos release e debug |
+| Fase 2 - execução segura e transacional | Implementada | workspaces exclusivos, locks, exit code preservado, timeout com `TERM`/`KILL` do grupo, substituição atômica por arquivo com rollback do conjunto, logs e manifestos exclusivos |
+| Fase 3 - dados, parsing e configuração | Implementada | pacote `rline_pipeline`, JSON Schema v1, geração determinística, parsers estritos, última linha RLINE preservada e merge bijetivo `one_to_one` |
+| Fase 4 - testes científicos | Implementada | T1-T8 reforçados, inclusive `1/20 <= max(AERMOD)/max(RLINE) <= 20` no T8; 72 testes rápidos coletados; quatro regressões EPA automatizadas |
+| Fase 5 - build, dependências e CI | Implementada | `Makefile` raiz, artefatos isolados em `build/`, `pyproject.toml`, `uv.lock`, CI rápida e regressão semanal/manual |
+| Fase 6 - visualização e documentação | Implementada | geometria, pivot, transectos e rótulos corrigidos; guias, `CONTRIBUTING.md`, `NOTICE` e documentação de reprodutibilidade atualizados sem inferir licença para componentes de terceiros |
+
+Os máximos de diferença relativa da variante RLINE corrigida contra os goldens
+são 1,789152% no Example Case, 0,523329% no CALTRANS, 0,088408% em Idaho Falls e
+0,314472% em Raleigh. Os respectivos limites são 1,9%, 0,55%, 0,095% e 0,33%;
+todos os casos estão dentro de seus limites documentados.
+
+Comandos de verificação do estado implementado:
+
+```bash
+make models
+make rline-debug
+make test
+make quality
+python3 scripts/teste_casos.py
+make scientific-regression
+RUN_FULL_PIPELINE=1 make scientific-regression
+```
+
+Com `RUN_FULL_PIPELINE=1`, a etapa de pipeline completo executa primeiro o caso
+canônico, incluindo AERMET Stages 1/2, AERMOD, RLINE corrigido e
+pós-processamento, e depois regenera, executa e valida os quatro casos
+configurados. Os wrappers usam por padrão os binários de `build/`, não os
+executáveis históricos rastreados.
+
 ## 3. Decisão de Proveniência do RLINE
 
 O código RLINE v1.2 distribuído pela EPA deve permanecer disponível sem
@@ -644,7 +684,7 @@ Entregas:
 - wrappers com exit code preservado;
 - timeout com encerramento do grupo;
 - diretório temporário por execução;
-- publicação atômica de outputs;
+- substituição atômica de cada output e rollback do conjunto em falha tratada;
 - logs exclusivos;
 - manifesto e proteção contra concorrência;
 - testes com executáveis falsos.

@@ -1,0 +1,166 @@
+--- a/Read_Line_Source_Inputs.f90
++++ b/Read_Line_Source_Inputs.f90
+@@ -23,79 +23,140 @@
+ ! ------------------------------------------------------------------------------
+ 
+       Use Line_Source_Data          
++      Use RLINE_Validation, only: Require_IO
++      Use ieee_arithmetic, only: ieee_is_finite
++      Use iso_fortran_env, only: error_unit
+       Implicit None
+ 
+ ! Local variables:
+-      Integer             ::    ReadStatus      ! Integer that indicates read status
++      Integer             ::    ReadStatus, CloseStatus
++      Character(len=256)  ::    IOMessage
+ ! ------------------------------------------------------------------------------
+     
+-      Open(Unit=10, File="Line_Source_Inputs.txt", Status="Old", Action="Read", Iostat=ReadStatus)
++      Open(Unit=10, File="Line_Source_Inputs.txt", Status="Old", Action="Read", &
++           Iostat=ReadStatus, Iomsg=IOMessage)
++      Call Require_IO(ReadStatus,"opening Line_Source_Inputs.txt",IOMessage)
+ 
+ ! ---- Input files
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)SourceFileName
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)SourceFileName
++      Call Require_IO(ReadStatus,"reading source file name",IOMessage)
+       Read(10,*)
+ 
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)ReceptorFileName
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)ReceptorFileName
++      Call Require_IO(ReadStatus,"reading receptor file name",IOMessage)
+ 
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)InputSurfaceFile
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)InputSurfaceFile
++      Call Require_IO(ReadStatus,"reading meteorological file name",IOMessage)
+   
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)OutputReceptorFile
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)OutputReceptorFile
++      Call Require_IO(ReadStatus,"reading output file name",IOMessage)
+ 
+ ! ---- User specified run options
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)Error_Limit
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)Error_Limit
++      Call Require_IO(ReadStatus,"reading integration error limit",IOMessage)
+   
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)fac_dispht ! Multiplies roughness length to estimate displacment heights
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)fac_dispht
++      Call Require_IO(ReadStatus,"reading displacement-height factor",IOMessage)
+     
+ ! ---- Output options
+       Read(10,*)
+       Read(10,*)
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_C ! Output Concentration ['P']lume, ['M']eander, ['T']otal
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_C
++      Call Require_IO(ReadStatus,"reading concentration option",IOMessage)
+   
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_ave ! Output 24 hour average
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_ave
++      Call Require_IO(ReadStatus,"reading daily-average option",IOMessage)
+ 
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_monthly ! Monthly Output files
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_monthly
++      Call Require_IO(ReadStatus,"reading hourly-output option",IOMessage)
+   
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_warn ! suppress numerical convergence warnings
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_warn
++      Call Require_IO(ReadStatus,"reading warning option",IOMessage)
+ 
+ ! ---- BETA OPTIONS
+       Read(10,*)
+       Read(10,*)
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_Analytical ! Use Analytical solution ALWAYS
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_Analytical
++      Call Require_IO(ReadStatus,"reading analytical-solution option",IOMessage)
+   
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_SC ! Use source configuration algorithms
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_SC
++      Call Require_IO(ReadStatus,"reading source-configuration option",IOMessage)
+   
+       Read(10,*)
+       Read(10,*)
+-      Read(10,*)op_width, width! Use roadwidth
++      Read(10,*,Iostat=ReadStatus,Iomsg=IOMessage)op_width, width
++      Call Require_IO(ReadStatus,"reading road-width option",IOMessage)
+   
+-      Close(Unit=10)
++      Close(Unit=10,Iostat=CloseStatus,Iomsg=IOMessage)
++      Call Require_IO(CloseStatus,"closing Line_Source_Inputs.txt",IOMessage)
+       
+       width = abs(width); ! take absolute value of lane width
+ 
++      if (.not. ieee_is_finite(Error_Limit) .or. Error_Limit <= 0.0_double) then
++        write(error_unit,'(A)') "RLINE error: Error_Limit must be finite and positive"
++        error stop 1
++      end if
++      if (.not. ieee_is_finite(fac_dispht) .or. fac_dispht < 0.0_double) then
++        write(error_unit,'(A)') "RLINE error: fac_dispht must be finite and nonnegative"
++        error stop 1
++      end if
++      if (.not. ieee_is_finite(width)) then
++        write(error_unit,'(A)') "RLINE error: lane width must be finite"
++        error stop 1
++      end if
++      if (op_C/='P' .and. op_C/='M' .and. op_C/='T') then
++        write(error_unit,'(A)') "RLINE error: concentration option must be P, M, or T"
++        error stop 1
++      end if
++      if (op_ave/='Y' .and. op_ave/='N') then
++        write(error_unit,'(A)') "RLINE error: daily-average option must be Y or N"
++        error stop 1
++      end if
++      if (op_monthly/='M' .and. op_monthly/='A' .and. op_monthly/='N') then
++        write(error_unit,'(A)') "RLINE error: hourly-output option must be M, A, or N"
++        error stop 1
++      end if
++      if (op_warn/='Y' .and. op_warn/='N') then
++        write(error_unit,'(A)') "RLINE error: warning option must be Y or N"
++        error stop 1
++      end if
++      if (op_Analytical/='Y' .and. op_Analytical/='N') then
++        write(error_unit,'(A)') "RLINE error: analytical-solution option must be Y or N"
++        error stop 1
++      end if
++      if (op_SC/='Y' .and. op_SC/='N') then
++        write(error_unit,'(A)') "RLINE error: source-configuration option must be Y or N"
++        error stop 1
++      end if
++      if (op_width/='Y' .and. op_width/='N') then
++        write(error_unit,'(A)') "RLINE error: road-width option must be Y or N"
++        error stop 1
++      end if
++
+ ! --- warn user if NO outputs are selected
+       if (op_monthly =='M')then
+       else if (op_monthly =='A')then
+@@ -108,4 +169,4 @@
+         write(*,*) "WARNING: User has selected NO daily average output file! "
+       end if
+ 
+-      End Subroutine
+\ No newline at end of file
++      End Subroutine

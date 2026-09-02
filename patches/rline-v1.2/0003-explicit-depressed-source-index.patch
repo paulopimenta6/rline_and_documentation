@@ -1,0 +1,131 @@
+--- a/Depressed_Displacement.f90
++++ b/Depressed_Displacement.f90
+@@ -13,7 +13,7 @@
+ ! General Public License is subject to their copyright restrictions.                  !
+ ! ----------------------------------------------------------------------------------- !
+ 
+-      real(kind=8) Function Depressed_Displacement(theta_line)
++      real(kind=8) Function Depressed_Displacement(theta_line, source_index)
+ ! -----------------------------------------------------------------------------------
+ !     Written by MGS and DKH
+ !     RLINE v1.2, November 2013
+@@ -29,15 +29,16 @@
+       implicit none
+ 
+ ! Local variables:
+-      real(kind=double)  :: theta_line    ! input
++      real(kind=double), intent(in) :: theta_line
++      integer, intent(in)           :: source_index
+       real(kind=double)  :: Depth, wTop, wBottom, dCL 
+       real(kind=double)  :: effD, relD, fracW, effW, theta_rel, Dcrit, F 
+ 
+ ! -----------------------------------------------------------------------------------
+-      Depth     = Source(indq)%Depth
+-      wBottom   = Source(indq)%wBottom
+-      wTop      = Source(indq)%wTop     
+-      dCL       = Source(indq)%dCL
++      Depth     = Source(source_index)%Depth
++      wBottom   = Source(source_index)%wBottom
++      wTop      = Source(source_index)%wTop     
++      dCL       = Source(source_index)%dCL
+ 
+       theta_rel = theta_line-thetaw ! relative angle between roadway and wind direction
+ 
+--- a/Translate_Rotate.f90
++++ b/Translate_Rotate.f90
+@@ -33,14 +33,20 @@
+       Use Line_Source_Data
+       Implicit None
+ 
+-! External functions:
+-      Real(kind=double)  :: Depressed_Displacement
++      Interface
++        Function Depressed_Displacement(theta_line, source_index) Result(displacement)
++          Import :: double
++          Real(kind=double), Intent(In) :: theta_line
++          Integer, Intent(In) :: source_index
++          Real(kind=double) :: displacement
++        End Function Depressed_Displacement
++      End Interface
+ 
+ ! Local variables:
+       Integer            :: index                         ! Counting index
+       Real(kind=double)  :: Xr_tran, Yr_tran,theta_line   ! Translated receptor cordinates
+       Real(kind=double)  :: Xsb_tran, Ysb_tran, Xse_tran, Yse_tran
+-      Real(kind=double)  :: dCL                  
++      Real(kind=double)  :: dCL, depressed_shift
+ 
+ ! -----------------------------------------------------------------------------------
+ 
+@@ -55,6 +61,7 @@
+  
+ ! ------Intialize variables used
+         dCL=Source(index)%dCL
++        depressed_shift=0.0_double
+   
+ ! ------Move initial user coordinate system so the origin is at the begining of first source             
+         Xsb_tran   = Source(index)%Xsb-X0
+@@ -80,10 +87,11 @@
+         if (op_SC =='Y')then ! Adjustments for near source configurations (depression)       
+ ! --------DEPRESSED ROADWAY ALGORITHM
+           if (Source(index)%Depth < 0.0) then 
+-            Xse_tran = Xse_tran-Depressed_Displacement(theta_line, index)*sin(theta_line)
+-            Yse_tran = Yse_tran+Depressed_Displacement(theta_line, index)*cos(theta_line)
+-            Xsb_tran = Xsb_tran-Depressed_Displacement(theta_line, index)*sin(theta_line)
+-            Ysb_tran = Ysb_tran+Depressed_Displacement(theta_line, index)*cos(theta_line)
++            depressed_shift = Depressed_Displacement(theta_line,index)
++            Xse_tran = Xse_tran-depressed_shift*sin(theta_line)
++            Yse_tran = Yse_tran+depressed_shift*cos(theta_line)
++            Xsb_tran = Xsb_tran-depressed_shift*sin(theta_line)
++            Ysb_tran = Ysb_tran+depressed_shift*cos(theta_line)
+           end if
+ ! --------END DEPRESSED ROADWAY ALGORITHM
+         end if
+--- a/Analytical_Line_Source.f90
++++ b/Analytical_Line_Source.f90
+@@ -41,7 +41,7 @@
+       real(kind=double)    :: sz,sy,tL,tU, denom,wtth,szvert
+       real(kind=double)    :: vert,corr 
+       real(kind=double)    :: Xdif,Ydif, Zs, Xtemp,Ytemp, Ztemp , xp, xper, xwd, xwd_lim
+-      real(kind=double)    :: theta, thlim, rad90 , th_true ,theta_adj
++      real(kind=double)    :: theta, thlim, rad90 , th_true ,theta_adj, xwd_tolerance
+       integer              :: it   
+       real(kind=double)    :: Conc
+       real(kind=double)    :: MthetaL, MthetaU, al, bl,thperp
+@@ -67,6 +67,10 @@
+ ! ---Get translated an rotated source information    
+      Zs = (Zsbegin+Zsend)/2.0;
+      length=sqrt((Xsend-Xsbegin)**2+(Ysend-Ysbegin)**2)
++     if (length <= 100.0_double*epsilon(length)* &
++                   max(1.0_double,abs(Xsbegin),abs(Ysbegin),abs(Xsend),abs(Ysend))) then
++       error stop "RLINE error: zero-length source reached Analytical_Line_Source"
++     end if
+      
+ ! ---orient the end points so the begining has a lower X value
+      if (Xsend < Xsbegin) then
+@@ -132,8 +136,10 @@
+      
+      Call Effective_wind(xrU,Zs);
+      syU         = sigmay(xrU);
+-     
+-     if(xrL.GT.0) then
++
++     xwd_lim       = -1000.0_double
++     xwd_tolerance = 100.0_double*epsilon(xrL)*max(1.0_double,abs(xrL),abs(xrU))
++     if(xrL.GT.xwd_tolerance) then
+ 
+        if(yrL.GT.yrU)then
+          if((yrU.gt.0.0).AND.(yrU.lt.5.0*syU))then
+@@ -167,9 +173,9 @@
+ 
+         end if
+ 
+-        elseif(xrL.LT.0)then
+-        xwd_lim = -1000.0
+-      end if
++        elseif(xrL.LT.-xwd_tolerance)then
++         xwd_lim = -1000.0
++       end if
+ ! -----------------------------------------------------------------------------------
+ 
+ ! ----Compute the concentration as if the line is infinite ---------------------------

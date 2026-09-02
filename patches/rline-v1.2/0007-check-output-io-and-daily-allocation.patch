@@ -1,0 +1,209 @@
+--- a/Write_Hourly_All.f90
++++ b/Write_Hourly_All.f90
+@@ -24,15 +24,19 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       use Line_Source_Data
++      use RLINE_Validation, only: Require_IO
+       implicit None
+ 
+ ! Local variables:
+       integer         :: Surf  ! input
+       integer         :: Index, Imet, j
+-      integer         :: WriteStatus
++      integer         :: WriteStatus, CloseStatus
+       character(500)  :: colhead, rowfmt
++      character(256)  :: IOMessage
+ ! -----------------------------------------------------------------------------------
+-      open(Unit=25, File=OutputReceptorFile, Status="Replace", Action="Write", Iostat=WriteStatus)   ! Open file for wriring output
++      open(Unit=25, File=OutputReceptorFile, Status="Replace", Action="Write", &
++           Iostat=WriteStatus, Iomsg=IOMessage)
++      call Require_IO(WriteStatus,"opening output "//trim(OutputReceptorFile),IOMessage)
+       write(25,'(A)')RLINEver
+       write(25,'(A,A,A,I0,A)')"SOURCE FILE: ",trim(SourceFileName), " (",Number_Sources, " Sources)"
+       write(25,'(A,A,A,I0,A)')"RECEPTOR FILE: ",trim(ReceptorFileName), " (",Number_Receptors, " Receptors)"
+@@ -73,6 +77,7 @@
+         end do
+       end do
+ 
+-      close(Unit=25)
++      close(Unit=25,Iostat=CloseStatus,Iomsg=IOMessage)
++      call Require_IO(CloseStatus,"closing output "//trim(OutputReceptorFile),IOMessage)
+ 
+-      end subroutine
+\ No newline at end of file
++      end subroutine
+--- a/Write_Hourly_by_Month.f90
++++ b/Write_Hourly_by_Month.f90
+@@ -24,17 +24,20 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       Use Line_Source_Data
++      Use RLINE_Validation, only: Require_IO
++      Use iso_fortran_env, only: error_unit
+       Implicit None
+ 
+ ! Local variables:
+       Integer           :: Surf ! input
+       Integer           :: Index, Imet,j
+       Integer           :: oldmo, mon, lenName
+-      Integer           :: WriteStatus
++      Integer           :: WriteStatus, CloseStatus
+       Character(len=40) :: WriteFile
+       Character(len=5)  :: ci, ci2
+       Character(len=4)  :: suffix
+       Character(500)    :: colhead, rowfmt
++      Character(256)    :: IOMessage
+ ! -----------------------------------------------------------------------------------
+ ! ----Ititalize
+       oldmo = 0 
+@@ -43,17 +46,26 @@
+       do Imet=1, Surf    
+         mon = SurfaceMet(Imet)%Month
+         if (oldmo .ne. mon) then      
+-          if (Imet .ne. 1) Close(Unit=25)
++          if (Imet .ne. 1) then
++            Close(Unit=25,Iostat=CloseStatus,Iomsg=IOMessage)
++            Call Require_IO(CloseStatus,"closing monthly output",IOMessage)
++          end if
+ ! --------create file name
+           lenName = len_trim(OutputReceptorFile)
+-          suffix  = OutputReceptorFile((lenName-3):(lenName+1))
++          if (lenName < 5) then
++            write(error_unit,'(A)') "RLINE error: monthly output file name is too short"
++            error stop 1
++          end if
++          suffix  = OutputReceptorFile((lenName-3):lenName)
+           write(ci,160) mon 
+           write(ci2,160) SurfaceMet(Imet)%Year
+ 160       format(I2.2)    
+           WriteFile = OutputReceptorFile(1:(lenName-4))// '_' // trim(ci) // '-' // trim(ci2)  //suffix  
+     
+ ! --------write header lines
+-          open(Unit=25, File=WriteFile, Status="Replace", Action="Write", Iostat=WriteStatus)   ! Open file for wriring output
++          open(Unit=25, File=WriteFile, Status="Replace", Action="Write", &
++               Iostat=WriteStatus, Iomsg=IOMessage)
++          Call Require_IO(WriteStatus,"opening monthly output "//trim(WriteFile),IOMessage)
+ 
+           Write(25,'(A)')RLINEver
+           Write(25,'(A,A,A,I0,A)')"SOURCE FILE: ",trim(SourceFileName), " (",Number_Sources, " Sources)"
+@@ -95,4 +107,9 @@
+         oldmo = SurfaceMet(Imet)%Month
+       end do ! end iMet
+ 
+-      end subroutine
+\ No newline at end of file
++      if (Surf > 0) then
++        Close(Unit=25,Iostat=CloseStatus,Iomsg=IOMessage)
++        Call Require_IO(CloseStatus,"closing final monthly output",IOMessage)
++      end if
++
++      end subroutine
+--- a/Write_Daily_Ave.f90
++++ b/Write_Daily_Ave.f90
+@@ -24,24 +24,34 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       use Line_Source_Data
++      use RLINE_Validation, only: Meteorology_Is_Valid, Require_Allocation, Require_IO
++      use iso_fortran_env, only: error_unit
+       implicit none
+ 
+ ! Local variables:
+       integer                        :: Surf ! input
+       integer                        :: Index, Imet, j
+-      integer                        :: WriteStatus  
++      integer                        :: WriteStatus, CloseStatus, DeallocateStatus
+       integer                        :: AllocateStatus, Namelen
+       integer                        :: CurrentDay, Nhrs
+       real(kind=double), Allocatable :: Ctemp(:,:),Cave(:,:)
+       character(4)                   :: suffix                    
+       character(500)                 :: colhead, rowfmt
+-      logical                        :: endofday
++      logical                        :: endofday, Meteorology_Valid
++      character(160)                 :: Meteorology_Reason
++      character(256)                 :: IOMessage
+ ! -----------------------------------------------------------------------------------
+       Namelen            = len_trim(OutputReceptorFile)
++      if (Namelen < 5) then
++        write(error_unit,'(A)') "RLINE error: daily output file name is too short"
++        error stop 1
++      end if
+       suffix             = OutputReceptorFile((Namelen-3):Namelen)
+       OutputReceptorFile = OutputReceptorFile(1:(Namelen-4))//'_DailyAve'//suffix
+       
+-      open(Unit=25, File=OutputReceptorFile, Status="Replace", Action="Write", Iostat=WriteStatus)   ! Open file for writing output
++      open(Unit=25, File=OutputReceptorFile, Status="Replace", Action="Write", &
++           Iostat=WriteStatus, Iomsg=IOMessage)
++      call Require_IO(WriteStatus,"opening daily output "//trim(OutputReceptorFile),IOMessage)
+       write(25,'(A)')RLINEver
+       write(25,'(A,A,A,I0,A)')"SOURCE FILE: ",trim(SourceFileName), " (",Number_Sources, " Sources)"
+       write(25,'(A,A,A,I0,A)')"RECEPTOR FILE: ",trim(ReceptorFileName), " (",Number_Receptors, " Receptors)"
+@@ -74,14 +84,17 @@
+ 111   format (1X,A)
+ 
+       allocate(Ctemp(Number_Receptors,Number_Groups),Stat=AllocateStatus)  
++      call Require_Allocation(AllocateStatus,"daily temporary concentrations")
+       allocate(Cave(Number_Receptors,Number_Groups),Stat=AllocateStatus)
++      call Require_Allocation(AllocateStatus,"daily average concentrations")
+       Currentday=SurfaceMet(1)%J_Day
+       Nhrs=0
+       Ctemp=0.0
+       write(rowfmt,'(A,i5,A)') '(1X,3(I4,'', ''),3(F12.3,'', ''),',Number_Groups,'(E14.6,'', ''))'
+ 
+       do Imet=1, Surf    
+-        Call Fill_Met(Imet)  
++        Meteorology_Valid=Meteorology_Is_Valid(SurfaceMet(Imet),Meteorology_Reason)
++        if (Meteorology_Valid) Call Fill_Met(Imet)
+         
+         endofday = .FALSE.
+         if(Imet .EQ. Surf) then
+@@ -91,7 +104,7 @@
+         endif
+         if(endofday) then ! Last hour in CurrentDay
+ ! --------Averge in the last hour of the day, if met data is okay
+-          if((ustar.GT.0.0).AND.(SurfaceMet(imet)%Hs.NE.-999.0)) then
++          if(Meteorology_Valid) then
+             do j=1,Number_Groups
+               Ctemp(:,j)=Ctemp(:,j)+Concentration(:,Imet,j) 
+             end do
+@@ -105,7 +118,7 @@
+ 
+ ! --------Write output
+           do Index = 1,Number_Receptors
+-            write(25,rowfmt)yr, Currentday, Nhrs, Receptor(Index)%Xr,Receptor(Index)%Yr, &
++            write(25,rowfmt)SurfaceMet(Imet)%Year, Currentday, Nhrs, Receptor(Index)%Xr,Receptor(Index)%Yr, &
+             Receptor(Index)%Zr, (Cave(Index,j), j=1,Number_Groups)      
+           end do
+           
+@@ -117,7 +130,7 @@
+           endif
+         else ! Not the end of a day...begin or continue averaging
+ ! --------Check  met data for this hour 
+-          if((ustar.GT.0.0).AND.(SurfaceMet(imet)%Hs .NE. -999.0)) then
++          if(Meteorology_Valid) then
+             do j=1,Number_Groups
+               Ctemp(:,j)=Ctemp(:,j)+Concentration(:,Imet,j)    
+             end do
+@@ -126,9 +139,17 @@
+         end if
+       end do
+ 
+-      deallocate(Ctemp)
+-      deallocate(Cave)       
+-      close(Unit=25)
++      deallocate(Ctemp,Stat=DeallocateStatus)
++      if (DeallocateStatus /= 0) then
++        write(error_unit,'(A)') "RLINE error: unable to release daily temporary concentrations"
++        error stop 1
++      end if
++      deallocate(Cave,Stat=DeallocateStatus)
++      if (DeallocateStatus /= 0) then
++        write(error_unit,'(A)') "RLINE error: unable to release daily average concentrations"
++        error stop 1
++      end if
++      close(Unit=25,Iostat=CloseStatus,Iomsg=IOMessage)
++      call Require_IO(CloseStatus,"closing daily output "//trim(OutputReceptorFile),IOMessage)
+ 
+       end subroutine
+-

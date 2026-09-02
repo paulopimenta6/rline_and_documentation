@@ -1,202 +1,303 @@
-# 🛣️ rline_and_documentation
+# Pipeline AERMET, AERMOD e RLINE
 
-> *"Quanta poluição aquela rodovia está deixando na vizinhança?"* — agora respondido
-> com modelagem de qualidade do ar de verdade, rodando do zero na sua máquina.
+Pipeline reproduzível para modelagem de dispersão de emissões rodoviárias. O
+repositório compila AERMET v26135, AERMOD v26135 e duas variantes do RLINE v1.2,
+executa os modelos em áreas temporárias e valida os resultados antes de
+publicá-los.
 
-Pipeline completo de **modelagem da dispersão de poluentes emitidos por uma rodovia**,
-com os três mosqueteiros da EPA na versão open-source:
+O AERMOD contém a fonte `RLINE` nativa desde a v22112. Neste projeto, sua saída
+é comparada com o RLINE v1.2 standalone. Essa comparação é evidência técnica,
+não aprovação regulatória nem endosso da EPA.
 
-| Modelo | Versão | Papel | Apelido |
-|---|---|---|---|
-| **AERMET** | v26135 | Pré-processador meteorológico (Stage 1 + Stage 2) | o meteorologista ☁️ |
-| **AERMOD** | v26135 | Modelo de dispersão com a fonte `RLINE` nativa | o cérebro 🧠 |
-| **RLINE** | v1.2 standalone | Implementação original (referência de validação) | o juiz ⚖️ |
+## Estado atual
 
-Sistema testado: **Ubuntu 22.04 · x86-64 · gfortran 11.4 · GNU Make 4.3 · Python 3.11+**
-(`numpy`, `pandas`, `matplotlib`).
-
----
-
-## 🎯 O que este projeto faz
-
-1. **Compila** os três modelos em paralelo (Makefiles com dependências declaradas).
-2. **Pré-processa** uma torre meteorológica sintética de 3 níveis (10/50/100 m, 120 horas)
-   com o AERMET até gerar `ONSITE.SFC` + `ONSITE.PFL`.
-3. **Processa** a dispersão da rodovia duas vezes:
-   - AERMOD, com a fonte de linha RLINE implementada nativamente;
-   - RLINE v1.2 standalone, como referência independente.
-4. **Pós-processa**: mapas de concentração, transectos, scatter log-log e métricas.
-5. **Valida** com 8 testes automatizados (T1–T8).
-6. **Explora cenários** através de 4 casos de uso parametrizados.
-
-O resultado: dois modelos independentes que "concordam" (correlação log-log > 0.95 no
-trecho da rodovia), e você ainda ganha mapas bonitos de brinde. 🎁
-
----
-
-## 🚀 Começando em 3 passos
-
-```bash
-# 1. Compilar (paralelo)
-make -C aermet_and_aermod/aermet_source -j$(nproc)
-make -C aermet_and_aermod/aermod_source/aermod_source_v26135 -j$(nproc)
-make -C RLINE_v1_2.Source/v1_2 -f Makefile.gfortran -j$(nproc)
-
-# 2. Pipeline fim-a-fim (AERMET → AERMOD → RLINE → gráficos)
-bash scripts/run_pipeline.sh
-
-# 3. Casos de uso + testes
-bash scripts/run_todos_casos.sh
-```
-
-> ⚠️ **Atenção (AERMOD):** NÃO use `-ffixed-line-length-132` — quebra o `rline.f`.
-> Os Makefiles já fazem a coisa certa.
-
----
-
-## 🗺️ Como tudo flui
-
-```
-ONSITE.MET (torre 3 níveis, 120 h)
-     │  AERMET Stage 1 (QA/QC) ──► ONSITE_QAOUT.TXT
-     │  AERMET Stage 2 (METPREP) ──► ONSITE.SFC + ONSITE.PFL
-     ▼
-AERMOD (RLINE_TEST.INP) ──► CONC_PLOT.PLT  (conc. PERIOD)
-RLINE v1.2 standalone   ──► Output_Road_Numerical.csv (horário)
-     │
-     ▼
-scripts Python ──► métricas + mapas + gráficos comparativos
-```
-
-A meteorologia processada é **compartilhada por todos os casos**: cada cenário só muda
-a geometria da rodovia, a emissão ou a grade de receptores.
-
----
-
-## 🧪 Casos de uso (cenários)
-
-Quatro "experimentos" definidos como dados (`config.json`) — para trocar um cenário,
-edite o JSON e rode de novo:
-
-| Caso | Rodovia | Emissão | Largura | Grade | O que investiga |
-|---|---|---|---|---|---|
-| `caso1_referencia` | 0–1000 m | QS 0.001 | 20 m | 26×31 (806 rec.) | linha de base |
-| `caso2_rodovia_curta` | 0–300 m | QS 0.001 | 20 m | 21×21 (441 rec.) | trecho urbano curto |
-| `caso3_emissao_alta` | 0–1000 m | QS 0.005 (5×) | 20 m | 21×21 | congestionamento 🚗💨 |
-| `caso4_rodovia_larga` | 0–1000 m | QS 0.001 | 40 m (2×) | 21×21 | pista dupla 🛣️ |
-
-**Resultados validados** (PERIOD de 120 h, março/1988):
-
-| Caso | máx. AERMOD (µg/m³) | máx. RLINE (µg/m³) | R²(log) no trecho | razão mediana |
-|---|---|---|---|---|
-| caso1 | ~48 967 | ~154 045 | 0.958 | 0.64 |
-| caso2 | ~48 379 | ~150 077 | 0.979 | 0.50 |
-| caso3 | ~244 833 (5×) | ~770 226 | 0.964 | 0.58 |
-| caso4 | ~90 142 (2×) | ~256 728 | 0.955 | 0.61 |
-
-Note como `caso3` e `caso4` escalam com a emissão por comprimento — o pipeline se
-comporta fisicamente. ✅
-
-### Comandos dos casos
-
-```bash
-python3 scripts/gerar_caso.py casos/caso1_referencia/config.json   # gera os dados
-bash scripts/run_caso.sh casos/caso1_referencia 600                # roda AERMOD+RLINE+pós
-python3 scripts/plot_casos_resumo.py                               # painel comparativo
-python3 scripts/teste_casos.py                                     # T1–T8 em todos
-```
-
----
-
-## ✅ Testes de verificação (T1–T8)
-
-| # | O que valida | Limite |
+| Componente | Variante | Binário gerado |
 |---|---|---|
-| T1 | AERMOD rodou | `CONC_PLOT.PLT` existe |
-| T2 | RLINE rodou | `Output_*_Numerical.csv` existe |
-| T3 | Merge completo | todos os receptores comparados |
-| T4 | Valores válidos | finitos e positivos |
-| T5 | Correlação global | R²(log) ≥ 0.85 (≥ 0.65 p/ grade ≫ rodovia) |
-| T6 | Correlação no trecho | R²(log) ≥ 0.95 |
-| T7 | Razão mediana | 0.30 – 1.20 |
-| T8 | Escala máx. | max RLINE / max AERMOD ≤ 20 |
+| AERMET v26135 | fonte distribuída no repositório | `build/aermet/aermet` |
+| AERMOD v26135 | fonte distribuída no repositório | `build/aermod/aermod` |
+| RLINE v1.2 | upstream original, sem patches | `build/rline-original/RLINEv1_2_gfortran.x` |
+| RLINE v1.2 | corrigido, release | `build/rline-patched/RLINEv1_2_patched.x` |
+| RLINE v1.2 | corrigido, debug | `build/rline-patched-debug/RLINEv1_2_patched_debug.x` |
+
+O `Makefile` da raiz compila cada modelo em uma árvore isolada sob `build/`.
+Ele não grava objetos, módulos ou executáveis nas árvores de fonte. Os wrappers
+usam por padrão os binários de `build/`; os binários históricos rastreados no
+repositório não são usados implicitamente.
+
+## Início rápido
+
+Pré-requisitos: Linux, Python 3.11 ou superior, GNU Make, `gfortran`, `patch`,
+`flock` e `setsid`. Para instalar o pacote Python e as ferramentas de
+desenvolvimento:
 
 ```bash
-python3 scripts/teste_casos.py   # → "TODOS OS TESTES PASSARAM" ✅
+python3 -m venv .venv
+. .venv/bin/activate
+bash .github/scripts/install-python-deps.sh
 ```
 
-A razão AERMOD/RLINE ~0.6 no eixo da rodovia é **esperada**: as duas implementações
-usam discretizações numéricas diferentes (AERMOD é a versão regulatória; o standalone
-é o código numérico original). Longe da rodovia a razão converge para 1.
+Esse helper fixa `uv==0.12.2`, resolve `uv.lock` com `--frozen`, instala as
+dependências exportadas e então instala o projeto editável sem re-resolver o
+ambiente. `python -m pip install -e '.[dev]'` continua disponível para
+desenvolvimento exploratório, mas não é uma instalação congelada.
 
----
-
-## 📁 Estrutura do projeto
-
-```
-rline_and_documentation/
-├── PLANO_MELHORIAS_PROJETO.md        # diagnóstico e roteiro de implementação
-├── PIPELINE_IMPLEMENTACAO.txt        # especificação + automação + validação
-├── GUIA_RLINE.md                     # conceitos RLINE
-├── GUIA_PIPELINE_AERMET_AERMOD_RLINE.md
-├── PLANO_Compilacao_Uso_RLINE.md
-├── aermet_and_aermod/                # fontes + Makefiles + binários
-├── RLINE_v1_2.Source/v1_2/           # fontes + Makefile.gfortran + binário
-├── RLINE_v1_2.Example_Cases/         # caso de exemplo (validado vs EPA)
-├── RLINE_v1_2.Evaluation_Data/       # CALTRANS, Idaho Falls, Raleigh (T8 EPA)
-├── Caso_Pipeline/                    # caso de referência (dados, rodadas, gráficos)
-├── casos/                            # 4 casos de uso + comparativo_geral.png
-└── scripts/                          # automação completa (12 scripts)
-    ├── run_pipeline.sh               # pipeline fim-a-fim (caso de referência)
-    ├── run_todos_casos.sh            # todos os casos + comparativo + testes
-    ├── gerar_caso.py / run_caso.sh   # um caso parametrizado
-    ├── postprocess_caso.py           # mapas/gráficos/resumo por caso
-    ├── plot_casos_resumo.py          # painel comparativo geral
-    └── teste_casos.py                # verificação T1–T8
-```
-
----
-
-## 📚 Documentação e referências
-
-- [PLANO_MELHORIAS_PROJETO.md](PLANO_MELHORIAS_PROJETO.md) — diagnóstico técnico,
-  prioridades, critérios de aceite e roteiro para as próximas implementações.
-- [PIPELINE_IMPLEMENTACAO.txt](PIPELINE_IMPLEMENTACAO.txt) — a bíblia: especificação,
-  automação e validação T1–T8 (incl. EPA).
-- [GUIA_RLINE.md](GUIA_RLINE.md) — conceitos do modelo RLINE e uso standalone.
-- [GUIA_PIPELINE_AERMET_AERMOD_RLINE.md](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md) —
-  pipeline completo validado.
-- [PLANO_Compilacao_Uso_RLINE.md](PLANO_Compilacao_Uso_RLINE.md) — compilação e uso.
-- PDFs oficiais: `RLINE_UserGuide_11-13-2013.pdf`, `aermet_userguide.pdf`,
-  `aermod_implementation_guide.pdf`, `appendix_w-2024.pdf`.
-
----
-
-## 🏗️ Como compilar (detalhes)
+Compile os modelos e as variantes operacionais usadas pelo pipeline:
 
 ```bash
-# AERMET (livre-forma, f2008)
-make -C aermet_and_aermod/aermet_source -j4
-
-# AERMOD (formato fixo — cuidado com o flag de comprimento de linha!)
-make -C aermet_and_aermod/aermod_source/aermod_source_v26135 -j4
-
-# RLINE v1.2 standalone
-make -C RLINE_v1_2.Source/v1_2 -f Makefile.gfortran -j4
+make models
 ```
 
-Binários gerados (`file` confirma): `aermet`, `aermod`, `RLINEv1_2_gfortran.x`
-— todos ELF 64-bit LSB PIE executáveis.
+`make models` gera AERMET, AERMOD, RLINE original e RLINE corrigido release.
+O build de diagnóstico é separado:
 
-## ⚙️ O que é "RLINE" afinal?
+```bash
+make rline-debug
+```
 
-É a formulação **RLINE** da EPA (Snyder & Heist, RLINE 1.2) para **fontes de linha**:
-rodovias, pistas, rampas. Em vez de modelar cada carro, a rodovia inteira é um
-segmento com emissão por metro por segundo (g/m/s). O AERMOD a partir da v22112 a
-incorpora nativamente; este projeto roda as duas implementações lado a lado para
-**validar uma com a outra** — ciência reprodutível do jeito certo. 🔬
+Execute o pipeline canônico, que inclui AERMET Stages 1 e 2, AERMOD, RLINE
+corrigido e pós-processamento:
 
----
+```bash
+bash scripts/run_pipeline.sh
+```
 
-*Feito com ☕, gfortran e muita paciência para descobrir por que `GRIDCART` não estava
-na lista `KEYWD` do módulo `modules.f`.*
+Execute ou valide os quatro casos parametrizados:
+
+```bash
+bash scripts/run_todos_casos.sh
+python3 scripts/teste_casos.py
+```
+
+Os modelos podem levar vários minutos. Para não alterar resultados versionados,
+rode pipelines completos em um worktree descartável, conforme
+[`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
+
+## Comandos principais
+
+| Comando | O que verifica |
+|---|---|
+| `make models` | builds isolados de AERMET, AERMOD, RLINE original e RLINE corrigido release |
+| `make rline-debug` | RLINE corrigido com checks, inicialização sentinela e traps IEEE |
+| `make test` | suíte rápida, excluindo testes marcados como científicos; 72 testes no estado de 2026-08-27 |
+| `make quality` | Ruff e sintaxe de todos os scripts Shell rastreados ou não ignorados |
+| `make scientific-regression` | testes rápidos, casos versionados e regressões EPA em diretórios temporários |
+| `RUN_FULL_PIPELINE=1 make scientific-regression` | acrescenta o pipeline canônico completo e, depois, os quatro casos configurados |
+| `make clean` | remove somente a árvore reconstruível `build/` |
+
+O relatório científico local é gravado por padrão em
+`build/scientific-regression/scientific-regression-report.json`, com logs no
+mesmo diretório de artefatos.
+
+## Fluxo de dados
+
+```text
+ONSITE.MET
+    |
+    +-- AERMET Stage 1 (QA/QC) --> ONSITE_QAOUT.TXT
+    |
+    +-- AERMET Stage 2 (METPREP) --> ONSITE.SFC + ONSITE.PFL
+                                          |
+                     +--------------------+--------------------+
+                     |                                         |
+                     v                                         v
+          AERMOD v26135, fonte RLINE              RLINE v1.2 corrigido
+                 CONC_PLOT.PLT                 Output_*_Numerical.csv
+                     |                                         |
+                     +--------------------+--------------------+
+                                          v
+                         parsing, merge, métricas e gráficos
+```
+
+O pipeline canônico gera 120 horas de meteorologia sintética em três níveis
+(10, 50 e 100 m). Os quatro casos reutilizam `ONSITE.SFC` e `ONSITE.PFL`, mas
+regeneram deterministicamente seus controles, fontes e receptores a partir de
+`config.json` antes de cada execução.
+
+## Builds e patches do RLINE
+
+`RLINE_v1_2.Source/v1_2/` permanece como snapshot upstream. Antes de preparar
+uma variante corrigida, `make rline-release` ou `make rline-debug` executa
+`sha256sum --check --strict patches/rline-v1.2/UPSTREAM_SHA256.txt`. Os oito
+patches são aplicados, sem fuzz, somente a uma cópia em `build/`:
+
+| Patch | Correção principal |
+|---|---|
+| `0001` | inicializa e valida a velocidade efetiva antes de `sigmaz` |
+| `0002` | remove a singularidade geométrica para vento paralelo e trata convergência/alocação |
+| `0003` | usa índice explícito na via deprimida e inicializa o limite analítico |
+| `0004` | valida meteorologia, I/O e recursos críticos |
+| `0005` | valida o arquivo de controle e suas opções |
+| `0006` | valida fontes e receptores; rejeita fonte nula e segunda barreira não implementada |
+| `0007` | verifica escrita/fechamento das saídas e alocações das médias diárias |
+| `0008` | amplia os caminhos de entrada e saída aceitos pelo RLINE |
+
+Cada build corrigido inclui `BUILD-INFO.txt` com variante, flags, compilador e
+checksums do executável e dos patches. O build debug usa, entre outras opções,
+`-fcheck=all`, `-finit-real=snan` e
+`-ffpe-trap=invalid,zero,overflow`.
+
+## Execução transacional
+
+Os wrappers `run_aermet.sh`, `run_aermod.sh`, `run_rline.sh`, `run_caso.sh` e
+`run_pipeline.sh` compartilham `scripts/lib/run_common.sh`. Eles:
+
+- normalizam caminhos absolutos ou relativos à raiz;
+- adquirem um lock não bloqueante por componente e destino;
+- copiam entradas para um workspace exclusivo ao lado do destino;
+- removem do workspace saídas potencialmente antigas;
+- executam cada comando em um novo grupo de processos;
+- aplicam timeout, `TERM`, período de graça e `KILL` ao grupo inteiro;
+- validam exit code, assinatura e estrutura mínima dos artefatos;
+- copiam cada saída validada para um temporário no filesystem do destino e
+  substituem cada arquivo atomicamente;
+- mantêm backups até o manifesto ser gravado e revertem o conjunto quando a
+  publicação ou o manifesto falha;
+- geram log e manifesto JSON exclusivos em `<destino>/logs/`.
+
+Uma publicação com vários caminhos não é um único snapshot atômico: leitores
+sem lock podem observar substituições intermediárias. Os locks serializam os
+escritores, e falhas tratadas são revertidas; `SIGKILL` e falha de energia não
+são uma transação durável com journal.
+
+O manifesto usa `schema_version: 1` e registra commit/estado do Git, duração,
+exit codes, timeout, checksum do executável, inputs, outputs e log. Os timeouts
+podem ser ajustados por `RUN_TIMEOUT_SECONDS` ou pelas variáveis específicas
+`AERMET_TIMEOUT_SECONDS`, `AERMOD_TIMEOUT_SECONDS` e
+`RLINE_TIMEOUT_SECONDS`. Os wrappers isolados usam 1800 s por comando de modelo;
+`run_pipeline.sh` e `run_caso.sh` usam 7200 s por etapa. O lote
+`run_todos_casos.sh` usa um orçamento agregado de 21600 s e execução sequencial
+por padrão; `MAX_PARALLEL_CASES` habilita paralelismo limitado.
+
+Interfaces principais:
+
+```bash
+bash scripts/run_aermet.sh [dir_dados] [bin_aermet]
+bash scripts/run_aermod.sh [dir_rodada] [bin_aermod] [control.inp] [dir_meteorologia]
+bash scripts/run_rline.sh [dir_rodada] [bin_rline] [arquivo.sfc]
+bash scripts/run_caso.sh <dir_caso> [transecto_x]
+```
+
+Sem argumentos de binário, os três primeiros wrappers selecionam os executáveis
+de `build/`, e o RLINE selecionado é a variante corrigida release.
+
+## Pacote Python e contratos de dados
+
+O pacote instalável `rline_pipeline` concentra a lógica antes duplicada nos
+scripts:
+
+- `config.py`: carrega o schema JSON v1, aplica restrições físicas e gera a
+  grade com aritmética decimal;
+- `generation.py`: gera controles AERMOD, fonte, receptores, controle RLINE e
+  metadados de forma determinística, e invalida resultados derivados quando um
+  input efetivo do modelo muda;
+- `parsing.py`: valida cabeçalhos, colunas, finitude, coordenadas, horas e
+  cardinalidade das saídas AERMOD/RLINE, sem descartar a última observação;
+- `analysis.py`: agrega o RLINE e faz merge bijetivo `one_to_one`, sem arredondar
+  coordenadas;
+- `plotting.py`: usa `pivot(Y, X)`, a geometria real da rodovia, transecto em Y
+  no X configurado e rótulos de métricas coerentes.
+
+O schema está em
+`rline_pipeline/schemas/case-config-v1.schema.json`. Campos desconhecidos,
+números não finitos, eixos com menos de dois pontos, coordenadas repetidas após
+conversão para `float`, grades acima de 1.000.000 de receptores, rodovia fora da
+grade e transecto fora da interseção rodovia/grade são rejeitados.
+
+## Casos parametrizados
+
+| Caso | Rodovia | `QS` | Largura | Grade | Questão |
+|---|---:|---:|---:|---:|---|
+| `caso1_referencia` | 1000 m | 0,001 | 20 m | 26 x 31 | referência |
+| `caso2_rodovia_curta` | 300 m | 0,001 | 20 m | 21 x 21 | trecho urbano curto |
+| `caso3_emissao_alta` | 1000 m | 0,005 | 20 m | 21 x 21 | emissão cinco vezes maior |
+| `caso4_rodovia_larga` | 1000 m | 0,001 | 40 m | 21 x 21 | largura duas vezes maior |
+
+Os resultados versionados abaixo pertencem ao fluxo histórico com o RLINE
+original. Eles são preservados como baseline; uma execução nova dos wrappers
+usa o RLINE corrigido e deve ser identificada por seu manifesto.
+
+| Caso | máx. AERMOD (µg/m³) | máx. RLINE original (µg/m³) | R²(log) no trecho | razão mediana AERMOD/RLINE |
+|---|---:|---:|---:|---:|
+| caso 1 | 48 966,6 | 154 045,2 | 0,9584 | 0,643 |
+| caso 2 | 48 378,6 | 150 076,9 | 0,9790 | 0,499 |
+| caso 3 | 244 833,0 | 770 226,2 | 0,9638 | 0,581 |
+| caso 4 | 90 142,0 | 256 727,6 | 0,9551 | 0,608 |
+
+## Verificação T1-T8
+
+`python3 scripts/teste_casos.py` descobre todos os casos pela presença de
+`config.json`; um caso sem resultado não é omitido.
+
+| Teste | Contrato atual |
+|---|---|
+| T1 | relatório AERMOD concluído, zero erros fatais, horas, grade e receptores completos |
+| T2 | RLINE com todos os receptores e exatamente todos os períodos esperados |
+| T3 | merge AERMOD/RLINE bijetivo e completo (`one_to_one`) |
+| T4 | concentrações finitas e estritamente positivas |
+| T5 | correlação log positiva e R² global >= 0,85; limite 0,65 quando a rodovia cobre menos de 60% da extensão X da grade |
+| T6 | correlação log positiva e R² no trecho real da rodovia >= 0,95 |
+| T7 | razão mediana AERMOD/RLINE entre 0,30 e 1,20 |
+| T8 | escala bilateral: `1/20 <= max(AERMOD)/max(RLINE) <= 20` |
+
+## Regressão EPA
+
+A regressão científica executa cada caso em diretório temporário, compara todas
+as chaves e colunas de concentração com os arquivos golden e nunca substitui os
+goldens. As variantes corrigida e original são executadas duas vezes por padrão;
+a original é diagnóstica, enquanto a aprovação exige que todas as repetições da
+corrigida permaneçam determinísticas e dentro dos limites.
+
+| Caso | máxima diferença relativa observada | limite |
+|---|---:|---:|
+| Example Case | 1,789152% | 1,9% |
+| CALTRANS | 0,523329% | 0,55% |
+| Idaho Falls | 0,088408% | 0,095% |
+| Raleigh | 0,314472% | 0,33% |
+
+Todos os valores observados estão dentro dos limites documentados em
+`scripts/scientific_regression.py`.
+
+## Integração contínua
+
+- `.github/workflows/ci.yml`: em push, pull request e execução manual, roda a
+  suíte rápida, valida Shell e recompila AERMET, AERMOD e as variantes original,
+  corrigida release e corrigida debug.
+- `.github/workflows/scientific-regression.yml`: semanal e manual, cria um
+  worktree isolado, executa a regressão completa com `RUN_FULL_PIPELINE=1`,
+  verifica que resultados versionados não mudaram e publica apenas diagnósticos.
+
+## Estrutura principal
+
+```text
+Makefile                         builds e alvos de verificação
+pyproject.toml                   pacote e dependências Python
+rline_pipeline/                  schema, geração, parsing, análise e gráficos
+scripts/                         wrappers e interfaces de linha de comando
+scripts/lib/run_common.sh        locks, timeout, publicação, logs e manifestos
+patches/rline-v1.2/              checksums, oito patches e build corrigido
+tests/                           testes rápidos e fixtures
+.github/workflows/               CI rápida e regressão científica
+Caso_Pipeline/                   pipeline canônico
+casos/                           quatro cenários parametrizados
+RLINE_v1_2.Source/v1_2/          snapshot original do RLINE
+RLINE_v1_2.Example_Cases/        Example Case e golden
+RLINE_v1_2.Evaluation_Data/      CALTRANS, Idaho Falls e Raleigh
+build/                           artefatos locais ignorados pelo Git
+```
+
+## Documentação
+
+- [`GUIA_PIPELINE_AERMET_AERMOD_RLINE.md`](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md):
+  arquivos e etapas do pipeline canônico.
+- [`GUIA_RLINE.md`](GUIA_RLINE.md): conceitos e formatos do RLINE.
+- [`PLANO_Compilacao_Uso_RLINE.md`](PLANO_Compilacao_Uso_RLINE.md): variantes,
+  compilação e execução do standalone.
+- [`PIPELINE_IMPLEMENTACAO.txt`](PIPELINE_IMPLEMENTACAO.txt): especificação
+  operacional detalhada.
+- [`PLANO_MELHORIAS_PROJETO.md`](PLANO_MELHORIAS_PROJETO.md): diagnóstico
+  histórico e status de implementação.
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): política de
+  reprodutibilidade e goldens.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): regras para contribuições.
+- [`NOTICE`](NOTICE): proveniência e avisos; consulte também os termos presentes
+  em cada distribuição upstream.

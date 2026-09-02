@@ -1,0 +1,28 @@
+THIRD-PARTY AND PROJECT NOTICE
+
+This repository aggregates locally authored automation and documentation with
+third-party scientific software, data, examples, binaries, and documents.
+
+Third-party material includes, without limitation:
+
+* AERMET v26135 material under aermet_and_aermod/aermet_source/;
+* AERMOD v26135 material under aermet_and_aermod/aermod_source/;
+* RLINE v1.2 source, binaries, examples, evaluation data, and user material;
+* documents and data identified as originating from or being distributed by
+  the United States Environmental Protection Agency (EPA).
+
+Those components may contain their own copyright, attribution, disclaimer,
+license, distribution, or other terms in file headers and original
+distributions. Preserve those notices and consult the applicable upstream terms
+before using, modifying, or redistributing each component. Inclusion in this
+repository does not relicense third-party material, and no single repository-
+wide license is presumed to apply to AERMET, AERMOD, RLINE, or EPA material.
+
+No EPA sponsorship, endorsement, regulatory approval, or warranty is implied.
+Model outputs must be identified by component, version, local patch state,
+inputs, and execution environment.
+
+The repository does not currently state a license for all locally authored
+scripts and documentation. The maintainer must make and record that licensing
+decision; this NOTICE does not choose a license or grant additional permission
+for that material.

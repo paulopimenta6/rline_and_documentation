@@ -1,701 +1,656 @@
 ================================================================================
-PIPELINE DE MODELAGEM DE QUALIDADE DO AR COM FONTE RLINE (RODOVIA)
-Documento de implementacao — Especificacao + Automacao + Validacao
+PIPELINE AERMET -> AERMOD/RLINE
+Especificação da implementação presente em 2026-08-27
 ================================================================================
+
 Projeto : rline_and_documentation
-Modelos : RLINE v1.2 (standalone), AERMET v26135, AERMOD v26135
-Linguagem: Portugues
-Objetivo : Documentar e automatizar todo o ciclo
-           COMPILACAO -> PRE-PROCESSAMENTO -> USO -> GERACAO DE RESULTADOS
-           do pipeline AERMET -> AERMOD/RLINE, incluindo os casos de exemplo
-           e os tres casos de avaliacao da EPA (CALTRANS, Idaho Falls, Raleigh).
+Modelos : AERMET v26135, AERMOD v26135, RLINE v1.2 standalone
+Objetivo: build isolado, execução transacional, análise validada e regressão
+          científica reproduzível para fontes rodoviárias.
+
+O AERMOD contém a fonte RLINE nativa desde a v22112. O repositório usa a
+v26135. A comparação com o RLINE standalone é uma verificação científica, não
+aprovação regulatória.
 
 --------------------------------------------------------------------------------
-1. VISÃO GERAL E ARQUITETURA
---------------------------------------------------------------------------------
-O pipeline simula a dispersao de poluentes emitidos por uma rodovia (fonte de
-linha, modelo RLINE) usando meteorologia de superficie gerada localmente.
-
-Fluxo completo:
-
-    ┌──────────────────┐   ┌────────────────────────────┐   ┌───────────────────┐
-    │ ONSITE.MET       │   │ AERMET (Stage 1 + Stage 2) │   │ ONSITE.SFC + .PFL │
-    │ (obs. de torre,  │ → │  ONSITE → QA/QC → METPREP  │ → │ (meteorologia     │
-    │ 3 niveis)        │   │                            │   │  pronta, 120 h)   │
-    └──────────────────┘   └────────────────────────────┘   └─────────┬─────────┘
-                                                                      │
-                                     ┌────────────────────────────────┘
-                                     ▼
-                            ┌────────────────────┐
-                            │ AERMOD (INP)       │  ← fonte RLINE + grade de
-                            │  → CONC PERIOD     │     receptores
-                            └─────────┬──────────┘
-                                      │
-                        ┌─────────────┴──────────────┐
-                        ▼                            ▼
-                CONC_PLOT.PLT (806 rec.)    RLINE v1.2 standalone (comparacao)
-                        │                            │
-                        └──────────────┬─────────────┘
-                                       ▼
-                          scripts Python -> graficos + analise comparativa
-
-Relacao entre os modelos:
-  - AERMET  : pre-processador meteorologico. Converte observacoes cruas
-              (ONSITE.MET) em parametros de camada limite (SFC) e perfis (PFL)
-              que os modelos de dispersao (AERMOD) utilizam.
-  - AERMOD  : modelo de dispersao regulatorio da EPA. A partir da versao
-              v22112+ implementa a fonte RLINE nativamente (arquivo rline.f).
-  - RLINE v1.2 standalone: implementacao independente (original) da
-              formulação RLINE, usada neste projeto como referencia/validacao
-              da fonte RLINE do AERMOD.
-
---------------------------------------------------------------------------------
-2. PRÉ-REQUISITOS E AMBIENTE
---------------------------------------------------------------------------------
-Sistema testado: Ubuntu 22.04.3, x86-64.
-
-Ferramentas obrigatorias:
-  - gfortran (testado com GNU Fortran 11.4.0)
-  - GNU Make 4.3
-  - Python 3.11+ com os pacotes: numpy, pandas, matplotlib
-  - setsid (pacote util-linux, ja presente em Ubuntu) para rodar os modelos
-    em background e nao estourar o timeout da shell.
-
-ATENCAO CRITICA (compilacao do AERMOD):
-  NAO usar a flag `-ffixed-line-length-132` ao compilar o AERMOD.
-  Essa flag quebra o parsing de rline.f (erro "Invalid character(s) in ELSE
-  statement"). Usar o comprimento de linha fixa PADRAO de 72 colunas.
-
-Versoes dos binarios gerados (verificar com `file`):
-  - aermet    : ELF 64-bit LSB pie executable
-  - aermod    : ELF 64-bit LSB pie executable
-  - RLINEv1_2_gfortran.x : ELF 64-bit LSB pie executable
-
---------------------------------------------------------------------------------
-3. COMPILAÇÃO DOS MODELOS
+1. VARIANTES E PROVENIÊNCIA
 --------------------------------------------------------------------------------
 
-3.1 AERMET v26135
---------------------------------------------------------------------------------
-Fontes: aermet_and_aermod/aermet_source/
-Script original (Windows): gfortran-aermet_allwarn.bat
-Ordem de compilacao (usar livre-forma, f2008):
-    gfortran -c -O2 -ffree-form mod_file_units.f90
-    gfortran -c -O2 -ffree-form mod_main1.f90
-    gfortran -c -O2 -ffree-form mod_upperair.f90
-    gfortran -c -O2 -ffree-form mod_surface.f90
-    gfortran -c -O2 -ffree-form mod_onsite.f90
-    gfortran -c -O2 -ffree-form mod_pbl.f90
-    gfortran -c -O2 -ffree-form mod_read_input.f90
-    gfortran -c -O2 -ffree-form mod_reports.f90
-    gfortran -c -O2 -ffree-form mod_misc.f90
-    gfortran -c -O2 -ffree-form aermet.f90
-    gfortran -o aermet -O2 mod_file_units.o mod_main1.o mod_upperair.o \
-              mod_surface.o mod_onsite.o mod_pbl.o mod_read_input.o \
-              mod_reports.o mod_misc.o aermet.o
-    rm -f *.o *.mod
-Binario gerado: aermet  (executar na pasta com o control file .INP)
+O RLINE possui três variantes construídas:
 
-3.2 AERMOD v26135
---------------------------------------------------------------------------------
-Fontes: aermet_and_aermod/aermod_source/aermod_source_v26135/
-Script original (Windows): gfortran-aermod.bat
-Ordem de compilacao (SEM -ffixed-line-length-132!):
-    gfortran -c -O2 modules.f
-    gfortran -c -O2 grsm.f
-    gfortran -c -O2 aermod.f
-    gfortran -c -O2 setup.f
-    gfortran -c -O2 coset.f
-    gfortran -c -O2 soset.f
-    gfortran -c -O2 reset.f
-    gfortran -c -O2 meset.f
-    gfortran -c -O2 ouset.f
-    gfortran -c -O2 inpsum.f
-    gfortran -c -O2 metext.f
-    gfortran -c -O2 iblval.f
-    gfortran -c -O2 siggrid.f
-    gfortran -c -O2 tempgrid.f
-    gfortran -c -O2 windgrid.f
-    gfortran -c -O2 calc1.f
-    gfortran -c -O2 calc2.f
-    gfortran -c -O2 prise.f
-    gfortran -c -O2 arise.f
-    gfortran -c -O2 prime.f
-    gfortran -c -O2 sigmas.f
-    gfortran -c -O2 pitarea.f
-    gfortran -c -O2 uninam.f
-    gfortran -c -O2 output.f
-    gfortran -c -O2 evset.f
-    gfortran -c -O2 evcalc.f
-    gfortran -c -O2 evoutput.f
-    gfortran -c -O2 rline.f
-    gfortran -c -O2 bline.f
-    gfortran -o aermod -O2 MODULES.o GRSM.o AERMOD.o SETUP.o COSET.o SOSET.o \
-              RESET.o MESET.o OUSET.o INPSUM.o METEXT.o IBLVAL.o SIGGRID.o \
-              TEMPGRID.o WINDGRID.o CALC1.o CALC2.o PRISE.o ARISE.o PRIME.o \
-              SIGMAS.o PITAREA.o UNINAM.o OUTPUT.o EVSET.o EVCALC.o \
-              EVOUTPUT.o RLINE.o BLINE.o
-    rm -f *.o *.mod
-Binario gerado: aermod  (executar na pasta de rodada, passando o .INP como arg)
+  original:
+    build/rline-original/RLINEv1_2_gfortran.x
 
-3.3 RLINE v1.2 standalone
---------------------------------------------------------------------------------
-Fontes: RLINE_v1_2.Source/v1_2/
-Compilar com:
-    make -f Makefile.gfortran
-Binario gerado: RLINEv1_2_gfortran.x
-Limpotura: make -f Makefile.gfortran clean
+  corrigida release, padrão dos wrappers:
+    build/rline-patched/RLINEv1_2_patched.x
 
-Observacao: o executavel RLINE NAO recebe argumentos; ele SEMPRE le o arquivo
-`Line_Source_Inputs.txt` do diretorio de trabalho corrente
-(ver Read_Line_Source_Inputs.f90, Open(Unit=10, File="Line_Source_Inputs.txt")).
+  corrigida debug:
+    build/rline-patched-debug/RLINEv1_2_patched_debug.x
+
+RLINE_v1_2.Source/v1_2/ é o snapshot upstream preservado. Antes de preparar uma
+variante corrigida, o alvo rline-provenance-check valida os 29 fontes Fortran e
+o Makefile.gfortran com:
+
+  sha256sum --check --strict patches/rline-v1.2/UPSTREAM_SHA256.txt
+
+Os oito patches são aplicados com fuzz zero somente a uma cópia em build/:
+
+  0001  inicializa e valida Effective_Wind antes de sigmaz;
+  0002  remove singularidade de orientação, trata convergência e desalocação;
+  0003  usa índice explícito na via deprimida e inicializa o limite analítico;
+  0004  valida meteorologia, I/O e alocações críticas;
+  0005  valida o arquivo de controle e suas opções;
+  0006  valida fontes e receptores, fonte nula e segunda barreira;
+  0007  verifica outputs e recursos das médias diária/mensal;
+  0008  amplia os caminhos de arquivo para 512 caracteres.
+
+Cada build corrigido grava BUILD-INFO.txt com variante, flags, compilador,
+checksum do executável e checksums dos patches.
 
 --------------------------------------------------------------------------------
-4. PRÉ-PROCESSAMENTO METEOROLÓGICO (AERMET)
+2. PRÉ-REQUISITOS E BUILD
 --------------------------------------------------------------------------------
 
-4.1 Geracao dos dados brutos ONSITE.MET
---------------------------------------------------------------------------------
-Script: Caso_Pipeline/scripts/gerar_dados_onsite.py
-Geracao de perfil de torre com 3 niveis (10, 50, 100 m), formato livre,
-periodo de 5 dias (1988-03-01 a 1988-03-05), 24 h/dia = 120 horas, com ciclo
-diurno realista (vento, temperatura, nuvens, altura de mistura, sigma_theta,
-sigma_w). Semente random fixa (42) para reprodutibilidade.
+Requisitos:
 
-Formato de cada grupo de 3 linhas (Tabela B-3/B-4 do AERMET User Guide):
-    linha 1:  dia mes ano hora  HT01 SA01 SW01 TT01 WD01 WS01 MHGT TSKC
-    linha 2:                        HT02 SA02 SW02 TT02 WD02 WS02
-    linha 3:                        HT03 SA03 SW03 TT03 WD03 WS03
-onde:
-    HTnn  = altura do nivel (m)
-    SAnn  = desvio padrao da direcao do vento, sigma_theta (graus)
-    SWnn  = desvio padrao da componente vertical, sigma_w (m/s)
-    TTnn  = temperatura (graus C)
-    WDnn  = direcao do vento (graus, desde o norte)
-    WSnn  = velocidade do vento (m/s)
-    MHGT  = altura de mistura observada (m)          [single-level]
-    TSKC  = cobertura total de nuvens, decimos      [single-level]
+  - Python 3.11 ou superior;
+  - GNU Fortran e GNU Make;
+  - patch e sha256sum;
+  - flock e setsid para os wrappers;
+  - dependências declaradas em pyproject.toml.
 
-Executar:
-    cd Caso_Pipeline && python3 scripts/gerar_dados_onsite.py
-Saida: Caso_Pipeline/dados_aermet/ONSITE.MET (120 h -> 360 linhas de dados)
+Instalação Python:
 
-4.2 AERMET Stage 1 (ONSITE — QA/QC das observacoes)
---------------------------------------------------------------------------------
-Control file: dados_aermet/ONSITE_S1.INP
-Conteudo e pontos-chave:
-    JOB
-          REPORT   ONSITE_S1_REPORT.TXT
-          MESSAGES ONSITE_S1_MESSAGE.TXT
-    ONSITE
-        DATA               ONSITE.MET
-        QAOUT              ONSITE_QAOUT.TXT
-          XDATES           1988/3/1 TO 1988/3/5
-          LOCATION         99999 74.0W 41.3N 0     <- OBRIGATORIO tadjust=0
-          READ 1 OSDY OSMO OSYR OSHR HT01 SA01 SW01 TT01 WD01 WS01 MHGT TSKC
-          READ 2                     HT02 SA02 SW02 TT02 WD02 WS02
-          READ 3                     HT03 SA03 SW03 TT03 WD03 WS03
-          FORMAT 1 FREE
-          FORMAT 2 FREE
-          FORMAT 3 FREE
-          RANGE TT -30 < 40 -99
-          RANGE SA 0 <= 95 -99
-          RANGE SW 0 < 3   -99
-          RANGE WS 0 < 50   -999
-          RANGE WD 0 <= 360 -999
-          RANGE MHGT 0 < 4000 -999
-          THRESHOLD        0.3
+  python3 -m venv .venv
+  . .venv/bin/activate
+  bash .github/scripts/install-python-deps.sh
 
-Pontos importantes:
-  - LOCATION com `tadjust=0`: com tadjust=5 o AERMET descarta observacoes
-    por nao encontrar dados NWS de ajuste; a longitude 74.0W define a zona
-    GMT->LST (5 h).
-  - XDATES explicito: obrigatorio definir o periodo.
-  - READ/FORMAT declarando todas as colunas do ONSITE.MET.
-  - RANGE estabelece limites fisicos de cada variavel (valor faltante entre
-    "<" e ">").
-  - THRESHOLD 0.3 = fracao minima de horas validas por dia (3 niveis).
+O helper fixa uv==0.12.2 e exporta uv.lock com --frozen. A alternativa
+python -m pip install -e '.[dev]' é útil para desenvolvimento, mas não congela
+a resolução.
 
-Executar (na pasta dados_aermet):
-    cd Caso_Pipeline/dados_aermet
-    /caminho/para/aermet ONSITE_S1.INP
-Saidas: ONSITE_QAOUT.TXT (dados QC'd), ONSITE_S1_REPORT.TXT, ONSITE_S1_MESSAGE.TXT
-Checagem de sucesso: "AERMET FINISHED SUCCESSFULLY" no report/message.
+Comandos da raiz:
 
-4.3 AERMET Stage 2 (METPREP — geracao de SFC/PFL)
---------------------------------------------------------------------------------
-Control file: dados_aermet/ONSITE_S2.INP
-Conteudo:
-    JOB
-          REPORT      ONSITE_S2_REPORT.RPT
-          MESSAGES    ONSITE_S2_MESSAGE.TXT
-    ONSITE
-        QAOUT          ONSITE_QAOUT.TXT
-    METPREP
-          OUTPUT      ONSITE.SFC
-          PROFILE     ONSITE.PFL
-          XDATES      1988/3/1 TO 1988/3/5
-          LOCATION    MYSITE 74.00W 41.3N 5
-          METHOD      WIND_DIR RANDOM
-          FREQ_SECT    MONTHLY 1
-          SECTOR 1      0   360
-          SITE_CHAR     1   1 0.200      0.800    0.500
-          ... (SITE_CHAR 1..12)
-          SITE_CHAR    12   1 0.200      0.800    0.500
+  make models
+    gera AERMET, AERMOD, RLINE original e RLINE corrigido release.
 
-Pontos importantes:
-  - OBRIGATORIO repetir LOCATION e XDATES no Stage 2. Sem LOCATION -> erro de
-    dados sem sobreposicao de datas; sem XDATES -> erro "E70 PBL_TEST NO DATA
-    PERIODS DATES OVERLAP".
-  - SITE_CHAR: 12 setores de superficie com mesmo albedo (0.200), razao de
-    Bowen (0.800) e rugosidade (0.500 m).
+  make rline-debug
+    gera a variante corrigida com checks de diagnóstico.
 
-Executar (na pasta dados_aermet):
-    cd Caso_Pipeline/dados_aermet
-    /caminho/para/aermet ONSITE_S2.INP
-Saidas: ONSITE.SFC (superficie, 120 h) e ONSITE.PFL (perfil vertical 10/50/100 m)
+  make test
+    executa pytest -m "not scientific"; 72 testes são coletados no estado
+    documentado em 2026-08-27.
+
+  make quality
+    executa Ruff e bash -n nos scripts Shell rastreados ou não ignorados.
+
+  make scientific-regression
+    executa os checks de projeto e as quatro regressões EPA.
+
+  RUN_FULL_PIPELINE=1 make scientific-regression
+    acrescenta o pipeline canônico completo e os quatro casos configurados.
+
+Saídas de build:
+
+  build/aermet/aermet
+  build/aermod/aermod
+  build/rline-original/RLINEv1_2_gfortran.x
+  build/rline-patched/RLINEv1_2_patched.x
+  build/rline-patched-debug/RLINEv1_2_patched_debug.x
+
+O Makefile raiz copia as fontes para build/. Nenhum objeto, módulo ou executável
+novo é gravado nas árvores de fonte. Os binários históricos rastreados não são
+defaults dos wrappers.
+
+AERMET é compilado a partir de aermet.f90 e dos módulos .f90, em formato livre.
+O Makefile declara a dependência de mod_pbl.o em mod_upperair.o e aceita build
+paralelo.
+
+AERMOD é compilado em formato fixo. NÃO usar -ffixed-line-length-132: a fonte
+rline.f distribuída depende do comprimento fixo padrão de 72 colunas.
+
+RLINE corrigido release usa -O2, warnings e diagnóstico de interfaces. Debug
+usa -O0 -g3, -fcheck=all, backtrace, inicialização sentinela e
+-ffpe-trap=invalid,zero,overflow.
 
 --------------------------------------------------------------------------------
-5. USO DO AERMOD COM FONTE RLINE
+3. ARQUITETURA DO PIPELINE CANÔNICO
 --------------------------------------------------------------------------------
 
-5.1 Formato do control file (colunas fixas)
---------------------------------------------------------------------------------
-O AERMOD usa formato de colunas fixas (funcao DEFINE em setup.f):
-  - colunas 1-2  : PATH (CO, SO, RE, ME, OU)
-  - colunas 4-11 : KEYWORD
-  - a partir da coluna 13: dados
+Fluxo:
 
-ATENCAO GRIDCART: a lista KEYWD (122 palavras, modules.f:1632) NAO contem as
-sub-keywords XYINC, XPNTS, STA, END. Por isso, no bloco GRIDCART CADA linha
-deve repetir o prefixo `GRIDCART <netid>` (as sub-keywords sao lidas por
-RECART/GENCAR em reset.f). Sem isso -> erro "RE E105 Invalid Keyword Specified".
+  ONSITE.MET, 120 horas x 3 níveis
+       |
+       +--> AERMET Stage 1 --> ONSITE_QAOUT.TXT
+       |
+       +--> AERMET Stage 2 --> ONSITE.SFC + ONSITE.PFL
+                                      |
+                     +----------------+----------------+
+                     |                                 |
+                     v                                 v
+            AERMOD, fonte RLINE             RLINE corrigido standalone
+               CONC_PLOT.PLT              Output_Road_Numerical.csv
+                     |                                 |
+                     +----------------+----------------+
+                                      v
+                         parsing, merge, métricas e gráficos
 
-5.2 Control file final (Caso_Pipeline/controles_aermod/RLINE_TEST.INP)
---------------------------------------------------------------------------------
-CO STARTING
-   TITLEONE   TESTE RLINE COM DADOS ONSITE SINTETICOS   <- obrigatoria (senao CO E130)
-   MODELOPT   DFAULT CONC
-   AVERTIME   PERIOD
-   POLLUTID   OTHER
-   RUNORNOT   RUN
-CO FINISHED
+Comando:
 
-SO STARTING
-   LOCATION   HWY1    RLINE  0.0  0.0  1000.0  0.0      <- segmento de reta da rodovia
-   SRCPARAM   HWY1   0.001  0.0   20.0                  <- QS (g/s/m2), altura, largura
-   SRCGROUP   ALL
-SO FINISHED
+  bash scripts/run_pipeline.sh
 
-RE STARTING
-   GRIDCART   RCART STA
-   GRIDCART   RCART XYINC  0.0  26  40.0  -300.0  31  20.0
-   GRIDCART   RCART END
-RE FINISHED
+Sequência efetiva:
 
-ME STARTING
-   SURFFILE   ONSITE.SFC
-   PROFFILE   ONSITE.PFL
-   SURFDATA   99999  1988
-   UAIRDATA   99999  1988
-   SITEDATA   99999  1988
-   PROFBASE   10.0 METERS
-ME FINISHED
+  1. cria staging exclusivo do Caso_Pipeline;
+  2. gera um ONSITE.MET novo com semente fixa 42;
+  3. executa AERMET Stage 1;
+  4. executa AERMET Stage 2;
+  5. executa AERMOD v26135;
+  6. executa RLINE v1.2 corrigido;
+  7. valida e compara as duas saídas;
+  8. gera conc_periodo_rline.png;
+  9. gera conc_aermod_vs_rline.png;
+ 10. publica os artefatos somente depois do sucesso de todas as etapas.
 
-OU STARTING
-   RECTABLE   ALLAVE FIRST
-   PLOTFILE   PERIOD ALL CONC_PLOT.PLT
-   MAXTABLE   ALLAVE 20
-OU FINISHED
+Defaults:
 
-5.3 Pontos-chave de cada bloco
---------------------------------------------------------------------------------
-SO (fonte RLINE):
-  - LOCATION <id> RLINE XSB YSB XSE YSE : segmento de reta (2 pontos).
-  - SRCPARAM <id> TEMP(1) TEMP(2) TEMP(3) [TEMP(4)]  (logica RLPARM em soset.f):
-      TEMP(1) = QS, emissao por area em g/(s·m2);
-      TEMP(2) = altura da liberacao (m);
-      TEMP(3) = WIDTH (largura da rodovia, m);
-      TEMP(4) = sigma_z inicial (opcional).
-  - RLSOURCE%QEMIS = TEMP(1) x TEMP(3) -> emissao por unidade de comprimento
-    em g/(s·m) (confirmado em rline.f:128). Ex.: 0.001 x 20 = 0.02 g/(s·m).
-  - SRCGROUP ALL: todas as fontes no grupo ALL.
+  PIPELINE_CASE_DIR = Caso_Pipeline
+  BIN_AERMET        = build/aermet/aermet
+  BIN_AERMOD        = build/aermod/aermod
+  BIN_RLINE         = build/rline-patched/RLINEv1_2_patched.x
 
-RE (grade de receptores):
-  - GRIDCART <netid> STA / ... XYINC ... / ... END (cada linha com prefixo).
-  - XYINC XSTART XNUM XDELTA YSTART YNUM YDELTA (GENCAR, reset.f:471).
-  - Ex.: XYINC 0.0 26 40.0 -300.0 31 20.0 -> X de 0 a 1000 m (26 pts, d=40),
-    Y de -300 a 300 m (31 pts, d=20) -> 806 receptores.
-
-ME (meteorologia):
-  - SURFFILE/PROFFILE apontam para ONSITE.SFC/ONSITE.PFL.
-  - SURFDATA/UAIRDATA/SITEDATA <id> <ano>.
-  - PROFBASE 10.0 METERS = base do perfil.
-
-OU (saida):
-  - PLOTFILE <AVEAVE> <GRPGRP> <FILNAM>: 3 campos, NAO 4 (senao OU E105).
-  - MAXTABLE <AVEAVE> <N>: ex. MAXTABLE ALLAVE 20 (2 parametros).
-  - RECTABLE ALLAVE FIRST.
-
-5.4 Execucao
---------------------------------------------------------------------------------
-    cd Caso_Pipeline/rodada_aermod     # onde estao ONSITE.SFC e ONSITE.PFL
-    setsid /caminho/para/aermod RLINE_TEST.INP > RLINE_TEST.out 2>&1 &
-- O control file pode ficar em outra pasta (controles_aermod/); o AERMOD busca
-  os arquivos .SFC/.PFL no diretorio de trabalho.
-- 806 receptores rodam em ~5 min. Com grades maiores excede o timeout da shell;
-  usar `setsid ... &` para background.
-- Checagem de sucesso em RLINE_TEST.out: "AERMOD Finishes Successfully",
-  0 erros fatais, 120 horas processadas, 5 warnings benignos:
-  SO W205 ZS=0.0 default; RE W214 ELEV inconsistent; ME W531 Met Station ID
-  missing; MX W403 SigA&SigW.
-- Saida: CONC_PLOT.PLT (806 receptores x conc. PERIOD em ug/m3).
+PIPELINE_STEP_TIMEOUT_SECONDS tem padrão 7200 s. PYTHON_TIMEOUT_SECONDS tem
+padrão 600 s.
 
 --------------------------------------------------------------------------------
-6. USO DO RLINE v1.2 STANDALONE
+4. AERMET STAGES 1 E 2
 --------------------------------------------------------------------------------
 
-6.1 Arquivos de entrada (pasta rodada_rline)
---------------------------------------------------------------------------------
-Quatro arquivos, referenciados pelo control file Line_Source_Inputs.txt:
-  1) Source_<caso>.txt    - fontes de linha
-  2) Receptor_<caso>.txt  - receptores
-  3) Met_<caso>.sfc       - meteorologia de superficie (ONSITE.SFC)
-  4) Output_<caso>_Numerical.csv - saida (horaria) + _DailyAve.csv
+Gerador:
 
-Formato de Source_<caso>.txt (18 colunas):
-    Group  X_b    Y_b    Z_b    X_e    Y_e    Z_e  dCL  sigmaz0  #lanes
-           Emis   Hw1    dw1    Hw2    dw2    Depth Wtop  Wbottom
-Exemplo (Caso_Pipeline/rodada_rline/Source_Road.txt):
-    HWY 0.0 0.0 0.0 1000.0 0.0 0.0 0.0 0.0 1.0 0.02 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-  -> Emis = 0.02 g/(m·s) = QS x WIDTH do AERMOD; 1 faixa.
+  Caso_Pipeline/scripts/gerar_dados_onsite.py
 
-Formato de Receptor_<caso>.txt (3 colunas):
-    X_coordinate  Y_Coordinate  Z_Coordinate
-    0.0   -300.0   0.0
-    ...
+Saída:
 
-Control file Line_Source_Inputs.txt:
-  - Posicoes de linha FIXAS (lidas por Read_Line_Source_Inputs.f90).
-  - Campos: fonte, receptor, met, output, error_limit (1.0e-03),
-    fac_dispht (5.0), opcoes de saida e opcoes beta.
-  - Opcoes usadas: total 'T' (plume+meander), media diaria 'Y',
-    todos os horarios 'A', suprimir avisos 'Y', numerico 'N',
-    sem barreira 'N', largura de pista 'Y' 20.0.
+  Caso_Pipeline/dados_aermet/ONSITE.MET
 
-6.2 Leitura da meteorologia (.sfc)
---------------------------------------------------------------------------------
-O RLINE le os 20 primeiros campos do .sfc via read list-directed, PULANDO a
-primeira linha (cabecalho de versao). Compativel com VERSION 26135 (campos
-extras ignorados). Wstar e CBL com valores faltantes (-9, -999) sao tratados
-por max(...,0) e max(SBL,CBL) em Fill_Met.f90.
+O arquivo representa 1988-03-01 a 1988-03-05, horas 1 a 24, em três níveis:
+10, 50 e 100 m. Há 360 linhas para 120 períodos.
 
-6.3 Execucao
---------------------------------------------------------------------------------
-    cd Caso_Pipeline/rodada_rline
-    setsid ./RLINEv1_2_gfortran.x > /tmp/rline_run.log 2>&1 &
-- Modo numerico com 806 receptores x 120 h leva ~4 min (214 s observados).
-- Saidas: Output_<caso>_Numerical.csv (horaria) e _DailyAve.csv.
-- Formato do CSV: 12 linhas de cabecalho, dados a partir da linha 13
-  (8 colunas com virgula final -> 7 colunas efetivas), 1 linha de rodape.
+Stage 1:
+
+  controle: ONSITE_S1.INP
+  XDATES  : 1988/3/1 TO 1988/3/5
+  LOCATION: 99999 74.0W 41.3N 0
+  saída   : ONSITE_QAOUT.TXT e relatórios
+
+Stage 2:
+
+  controle: ONSITE_S2.INP
+  XDATES  : 1988/3/1 TO 1988/3/5
+  LOCATION: MYSITE 74.00W 41.3N 5
+  saída   : ONSITE.SFC e ONSITE.PFL
+
+Execução isolada:
+
+  bash scripts/run_aermet.sh [dir_dados] [bin_aermet]
+
+Defaults:
+
+  dir_dados = Caso_Pipeline/dados_aermet
+  binário   = build/aermet/aermet
+  timeout   = 1800 s, configurável por AERMET_TIMEOUT_SECONDS
+
+O wrapper exige mensagem de sucesso nos relatórios dos dois stages, QAOUT não
+vazio, SFC com VERSION: e PFL com registros meteorológicos.
 
 --------------------------------------------------------------------------------
-7. CASOS DE EXEMPLO E DE AVALIACAO DA EPA
---------------------------------------------------------------------------------
-Os casos seguem a mesma estrutura do Caso_Pipeline (rodar de dentro da pasta
-do caso, com o control file Line_Source_Inputs.txt local).
-
-7.1 Example_case (RLINE_v1_2.Example_Cases/Example_case/)
-  - Fontes: Source_Example.txt e Source_Example_dCL.txt (rodovias cruzadas).
-  - Met: Met_Example.sfc.
-  - Receptores: Receptor_Example.txt.
-  - Executar: copiar RLINEv1_2_gfortran.x para a pasta, rodar, e conferir a
-    saida Output_Example_Numerical.csv (referencia: Output_Example.csv).
-
-7.2 CALTRANS99 (RLINE_v1_2.Evaluation_Data/Evaluation_data/CALTRANS_RLINE/)
-  - CALTRANS99_Source.txt, CALTRANS99_ALLreceptors.txt, CALTRANS99_met.sfc.
-  - Referencia: CALTRANS99_Output.csv. README: README_RLINE_CALTRANS99.pdf.
-
-7.3 Idaho Falls (RLINE_v1_2.Evaluation_Data/Evaluation_data/IdahoFalls_RLINE/)
-  - IF2009_Source_INF.txt, IF2009_Receptors_INF.txt, IF2009_Case1235.sfc.
-  - Referencia: IF2009_Output_INF_Case1235.csv.
-  - README: README_RLINE_IdahoFalls_Infinite.pdf.
-
-7.4 Raleigh (RLINE_v1_2.Evaluation_Data/Evaluation_data/Raleigh_RLINE/)
-  - Ral2006_Source.txt, Ral2006_Receptors.txt, Ral_2006_NO.sfc.
-  - Referencia: Ral2006_Output.csv. README: README_RLINE_Raleigh.pdf.
-
---------------------------------------------------------------------------------
-8. GERACAO DE RESULTADOS E POS-PROCESSAMENTO
+5. AERMOD COM FONTE RLINE
 --------------------------------------------------------------------------------
 
-8.1 Leitura do CONC_PLOT.PLT (AERMOD)
---------------------------------------------------------------------------------
-Cabecalho de 8 linhas, depois 806 linhas de dados. Formato (linha 7):
-  (3(1X,F13.5),3(1X,F8.2),2X,A6,2X,A8,2X,I8.8,2X,A8) -> colunas:
-  X, Y, CONC, ZELEV, ZHILL, ZFLAG, AVE, GRP, NHRS, NETID.
-Leitura Python:
-    d = pd.read_csv('CONC_PLOT.PLT', skiprows=8, sep=r'\s+',
-                    names=['X','Y','CONC','ZELEV','ZHILL','ZFLAG',
-                           'AVE','GRP','NHRS','NET'])
+Controle canônico:
 
-8.2 Leitura do Output_*_Numerical.csv (RLINE)
---------------------------------------------------------------------------------
-    rline = pd.read_csv('Output_Road_Numerical.csv', skiprows=12,
-                        skipfooter=1, engine='python', header=None,
-                        usecols=[0,1,2,3,4,5,6],
-                        names=['Year','JD','Hour','X','Y','Z','C'])
-    rline = rline[rline['C'] > -99.0]
-    rline_period = rline.groupby(['X','Y'])['C'].mean().reset_index()
-(PERIOD do AERMOD = media das 120 horas do RLINE; arredondar X/Y a 0.1 para o merge.)
+  Caso_Pipeline/controles_aermod/RLINE_TEST.INP
 
-8.3 Scripts de pos-processamento (Caso_Pipeline/scripts/)
---------------------------------------------------------------------------------
-  - compare_aermod_rline.py      : metricas comparativas (R^2 log-log, razao,
-                                    max, transecto X=600).
-  - plot_conc_aermod_rline.py    : mapa de contorno + transecto em X=600 m
-                                    (le o CONC_PLOT.PLT da pasta de trabalho).
-  - plot_compare_aermod_rline.py : 3 paineis: transecto X=600, scatter log-log
-                                    com linhas 1:1 e fator 0.64, razao ao
-                                    longo do transecto.
-Observacao: os scripts originais continham caminhos hardcoded em
-`/media/paulo/...`; a automacao deste documento corrige isso para caminhos
-relativos ao diretorio raiz do projeto.
+Pontos principais:
 
-8.4 Resultados esperados do Caso_Pipeline (referencia validada)
---------------------------------------------------------------------------------
-  - AERMOD PERIOD: max 48966.6 ug/m3 em (X=600, Y=0) (sobre a rodovia);
-    min ~61 ug/m3 a Y=+/-300 m.
-  - RLINE (media 120 h): max ~153272 ug/m3 (eixo da rodovia).
-  - Comparacao (806 receptores): R^2 (log-log) = 0.96; razao media
-    AERMOD/RLINE ~= 0.64; converge para 1 longe da rodovia (Y >= 240 m) e
-    cai para ~0.32 no eixo (Y=0). Diferencas proximas a fonte sao esperadas
-    (AERMOD usa implementacao regulatoria diferente do codigo standalone
-    numerico).
+  LOCATION HWY1 RLINE 0.0 0.0 1000.0 0.0
+  SRCPARAM HWY1 0.001 0.0 20.0
 
-8.5 Graficos gerados
---------------------------------------------------------------------------------
-  - graficos/conc_periodo_rline.png     : mapa (escala limitada a P99) + transecto.
-  - graficos/conc_aermod_vs_rline.png   : comparacao AERMOD vs RLINE standalone.
+  QEMIS = QS x WIDTH = 0.001 x 20 = 0.02 g/(s.m)
 
-8.6 CASOS DE USO (CENARIOS) — casos/
---------------------------------------------------------------------------------
-Quatro casos de uso sao definidos como dados (config.json) e executam o
-pipeline de PROCESSAMENTO (AERMOD + RLINE) + POS-PROCESSAMENTO (mapas,
-graficos e resumo). O PRE-PROCESSAMENTO meteorologico (AERMET) e unico e
-compartilhado (Caso_Pipeline/dados_aermet/ONSITE.SFC/.PFL).
+  GRIDCART RCART XYINC 0.0 26 40.0 -300.0 31 20.0
+  total: 26 x 31 = 806 receptores
 
-  casos/caso1_referencia     rodovia 0..1000 m, QS=0.001, width=20,
-                             grade 26x31 (806 rec) — caso de referencia.
-  casos/caso2_rodovia_curta  rodovia 0..300 m (trecho urbano curto),
-                             grade 21x21 (441 rec).
-  casos/caso3_emissao_alta   rodovia 0..1000 m, QS=0.005 (emissao 5x,
-                             congestionamento), grade 21x21.
-  casos/caso4_rodovia_larga  rodovia 0..1000 m, width=40 (pista dupla),
-                             grade 21x21.
+  PLOTFILE PERIOD ALL CONC_PLOT.PLT
 
-Cada caso tem:
-  config.json                 parametros (comprimento, y, QS, width, grade).
-  controles_aermod/RLINE_TEST.INP   control file AERMOD.
-  rodada_rline/Source_Road.txt, Receptor_Road.txt, Line_Source_Inputs.txt.
-  rodada_aermod/CONC_PLOT.PLT  resultado AERMOD (PERIOD).
-  rodada_rline/Output_Road_Numerical.csv  resultado RLINE (horario).
-  graficos/conc_periodo_rline.png e conc_aermod_vs_rline.png.
-  resumo.txt                 metricas (R^2 global e no trecho, razao, max).
-  metadados.txt              parametros do caso.
+O controle AERMOD usa colunas fixas: pathway em 1-2, keyword em 4-11 e dados a
+partir da coluna 13. STA, XYINC e END são subpalavras de GRIDCART; cada linha
+repete GRIDCART e o netid.
 
-Geracao dos dados:  python3 scripts/gerar_caso.py <caso>/config.json
-Pipeline de um caso: bash scripts/run_caso.sh <caso> [transecto_x]
-Todos os casos:      bash scripts/run_todos_casos.sh
-Comparativo geral:   python3 scripts/plot_casos_resumo.py
-Testes:              python3 scripts/teste_casos.py
+Execução isolada:
 
-Resultados validados (out/2026, periodo de 120 h, mar/1988):
-  caso1: R^2(log) trecho=0.958 | razao mediana=0.643 | max AERMOD ~48 967
-  caso2: R^2(log) trecho=0.979 | razao mediana=0.499 | max AERMOD ~48 379
-  caso3: R^2(log) trecho=0.964 | razao mediana=0.581 | max AERMOD ~244 833 (5x)
-  caso4: R^2(log) trecho=0.955 | razao mediana=0.608 | max AERMOD ~90 142 (2x)
-(ug/m3; caso3 e caso4 escalam com a emissao por comprimento, confirmando a
-consistencia do pipeline). Todos os 8 testes T1-T8 passam.
+  bash scripts/run_aermod.sh \
+    [dir_rodada] [bin_aermod] [control.inp] [dir_meteorologia]
+
+Defaults:
+
+  dir_rodada      = Caso_Pipeline/rodada_aermod
+  binário         = build/aermod/aermod
+  controle        = Caso_Pipeline/controles_aermod/RLINE_TEST.INP
+  meteorologia    = Caso_Pipeline/dados_aermet
+  timeout         = 1800 s, configurável por AERMOD_TIMEOUT_SECONDS
+
+O wrapper exige exit code zero, AERMOD Finishes Successfully e CONC_PLOT.PLT
+novo com cabeçalho válido.
 
 --------------------------------------------------------------------------------
-9. PROJETO DE AUTOMACAO (SCRIPTS A IMPLEMENTAR)
+6. RLINE STANDALONE
 --------------------------------------------------------------------------------
-Objetivo: rodar o pipeline fim-a-fim com um unico comando, corrigindo o
-hardcode de caminhos dos scripts existentes.
 
-Scripts propostos (na pasta scripts/ na raiz do projeto):
+Arquivos canônicos:
 
-9.1 scripts/gerar_grade.py
-  Gera a grade de receptores (26 x 31 -> 806 pts) e os arquivos RLINE:
-    - Receptor_Road.txt  (3 colunas: X Y Z)
-    - Source_Road.txt    (fonte HWY 0-1000 m, Emis = QS x WIDTH)
-    - (opcional) receita para gerar ONSITE.MET via gerar_dados_onsite.py.
-  Uso:
-    python3 scripts/gerar_grade.py \
-        --saida Caso_Pipeline/rodada_rline \
-        --xini 0 --xn 26 --xdelta 40 \
-        --yini -300 --yn 31 --ydelta 20 \
-        --qs 0.001 --width 20.0 --comprimento 1000.0 --emis 0.02
+  Source_Road.txt
+    fonte de (0,0,0) a (1000,0,0), Emis = 0.02 g/(m.s).
 
-9.2 scripts/run_aermet.sh
-  Roda Stage 1 e Stage 2 do AERMET na pasta dados_aermet e checa
-  "AERMET FINISHED SUCCESSFULLY" no report.
-  Uso: bash scripts/run_aermet.sh <dir_dados_aermet> <bin_aermet>
+  Receptor_Road.txt
+    a mesma grade de 806 receptores do AERMOD.
 
-9.3 scripts/run_aermod.sh
-  Copia ONSITE.SFC/.PFL para a pasta de rodada, roda o AERMOD com o control
-  file RLINE_TEST.INP via setsid, aguarda termino e checa
-  "AERMOD Finishes Successfully".
-  Uso: bash scripts/run_aermod.sh <dir_rodada> <bin_aermod> <inp>
+  Line_Source_Inputs.txt
+    total pluma + meandro, média diária, saída horária única, modo numérico,
+    sem barreira e largura de 20 m.
 
-9.4 scripts/run_rline.sh
-  Roda o RLINE standalone na pasta rodada_rline via setsid e aguarda o
-  Output_*_Numerical.csv.
-  Uso: bash scripts/run_rline.sh <dir_rodada_rline> <bin_rline>
+  ONSITE.SFC
+    meteorologia produzida pelo AERMET.
 
-9.5 scripts/run_pipeline.sh (orquestrador fim-a-fim)
-  Sequencia completa:
-    1. python3 scripts/gerar_dados_onsite.py (gera ONSITE.MET)
-    2. bash scripts/run_aermet.sh  (S1+S2 -> ONSITE.SFC/.PFL)
-    3. bash scripts/run_aermod.sh  (AERMOD -> CONC_PLOT.PLT)
-    4. bash scripts/run_rline.sh   (RLINE -> Output_*_Numerical.csv)
-    5. python3 Caso_Pipeline/scripts/compare_aermod_rline.py
-    6. python3 Caso_Pipeline/scripts/plot_conc_aermod_rline.py
-    7. python3 Caso_Pipeline/scripts/plot_compare_aermod_rline.py
-  Uso: bash scripts/run_pipeline.sh
+Execução isolada:
 
-9.6 scripts/gerar_caso.py (casos de uso parametrizados)
-  Gera todos os dados de entrada de um caso a partir do config.json:
-    controles_aermod/RLINE_TEST.INP, rodada_rline/Source_Road.txt,
-    Receptor_Road.txt, Line_Source_Inputs.txt, metadados.txt.
-  A grade RLINE espelha exatamente o GRIDCART do AERMOD; o Emis do RLINE e
-  calculado como QS x WIDTH (consistencia com a logica RLPARM do AERMOD).
-  Uso: python3 scripts/gerar_caso.py casos/<nome>/config.json
+  bash scripts/run_rline.sh [dir_rodada] [bin_rline] [meteorologia.sfc]
 
-9.7 scripts/run_caso.sh (pipeline de um caso)
-  PROCESSAMENTO (AERMOD + RLINE) + POS-PROCESSAMENTO (mapas, graficos,
-  resumo.txt) para um caso, reutilizando a meteorologia do Caso_Pipeline.
-  Uso: bash scripts/run_caso.sh casos/<nome> [transecto_x]
+Defaults:
 
-9.8 scripts/run_todos_casos.sh (orquestrador dos casos)
-  Gera os dados pendentes, roda o pipeline de cada caso em casos/, gera o
-  comparativo geral e roda os testes. Uso: bash scripts/run_todos_casos.sh
+  dir_rodada = Caso_Pipeline/rodada_rline
+  binário    = build/rline-patched/RLINEv1_2_patched.x
+  timeout    = 1800 s, configurável por RLINE_TIMEOUT_SECONDS
 
-9.9 scripts/postprocess_caso.py (pos-processamento parametrizado)
-  Le CONC_PLOT.PLT + Output_*_Numerical.csv de um caso e gera:
-    graficos/conc_periodo_rline.png, graficos/conc_aermod_vs_rline.png,
-    resumo.txt (R^2 global e no trecho da rodovia, razao, max).
-  Uso: python3 scripts/postprocess_caso.py <caso_dir> [--transecto X]
+O terceiro argumento é opcional. Quando presente, o wrapper copia a
+meteorologia para o workspace e ajusta somente a cópia do controle.
 
-9.10 scripts/plot_casos_resumo.py (comparativo entre casos)
-  Painel 2x2 de mapas + barras de concentracao maxima por caso.
-  Salva casos/comparativo_geral.png. Uso: python3 scripts/plot_casos_resumo.py
-
-9.11 scripts/teste_casos.py (verificacao automatizada)
-  Roda os testes T1-T8 para todos os casos (ver secao 10).
-  Uso: python3 scripts/teste_casos.py [casos/casoX ...]
-
-9.6 Ajustes nos scripts existentes
-  - compare_aermod_rline.py e plot_compare_aermod_rline.py: trocar
-    base = '/media/paulo/12382BE468602ECF/rline_and_documentation/Caso_Pipeline'
-    por caminho relativo (ex.: os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-  - plot_conc_aermod_rline.py: ja usa caminho relativo (roda da pasta rodada_aermod).
+O CSV horário possui 12 linhas de cabeçalho. Os registros têm sete campos
+efetivos e podem terminar com uma vírgula que representa uma oitava coluna
+vazia. Não existe rodapé: a última linha é uma observação válida.
 
 --------------------------------------------------------------------------------
-10. VALIDACAO / CHECAGENS (TESTES)
+7. GARANTIAS TRANSACIONAIS DOS WRAPPERS
 --------------------------------------------------------------------------------
-Antes de considerar o pipeline concluido, executar as seguintes verificacoes:
 
-T1. ONSITE.MET: 360 linhas de dados (120 h x 3 niveis).
-    grep -c '^' Caso_Pipeline/dados_aermet/ONSITE.MET  (>= 360; mais cabecalho? nao ha)
-    Python: contar blocos de 3 linhas.
+run_aermet.sh, run_aermod.sh, run_rline.sh, run_caso.sh e run_pipeline.sh usam
+scripts/lib/run_common.sh.
 
-T2. AERMET S1: arquivo ONSITE_QAOUT.TXT existe e nao-vazio;
-    report contem "AERMET FINISHED SUCCESSFULLY".
+Cada execução:
 
-T3. AERMET S2: ONSITE.SFC e ONSITE.PFL existem com ~120 linhas de dados.
+  - resolve caminhos absolutos ou relativos à raiz;
+  - cria o destino quando permitido;
+  - adquire lock não bloqueante por componente/destino;
+  - cria workspace exclusivo ao lado do destino;
+  - copia inputs sem reutilizar outputs de runtime;
+  - inicia o comando em novo grupo de processos com setsid;
+  - preserva o exit code;
+  - no timeout, envia TERM, aguarda e envia KILL ao grupo inteiro;
+  - executa wait e limpa timer/workspace;
+  - valida conteúdo e assinatura dos outputs;
+  - copia outputs validados para temporários no filesystem de cada destino;
+  - substitui atomicamente cada arquivo e mantém backups até o manifesto;
+  - em falha tratada de publicação ou manifesto, reverte o conjunto instalado;
+  - grava log e manifesto JSON exclusivos.
 
-T4. AERMOD: RLINE_TEST.out contem "AERMOD Finishes Successfully" e
-    "No errors in this run" (0 fatais); CONC_PLOT.PLT tem 806 linhas de dados
-    (linhas totais - 8 cabecalho = 806).
+Uma publicação com vários destinos não é um snapshot atômico único: um leitor
+sem lock pode observar substituições intermediárias. Os locks serializam
+escritores, mas não há journal durável contra SIGKILL ou falha de energia.
 
-T5. RLINE: Output_Road_Numerical.csv gerado; numero de linhas de dados =
-    806 receptores x 120 h = 96720 (linhas totais - 12 cabecalho - 1 rodape).
+Logs e manifestos ficam, por padrão, em <destino>/logs/. O manifesto schema v1
+registra:
 
-T6. Comparacao (compare_aermod_rline.py): R^2(log) >= 0.90 e
-    razao AERMOD/RLINE em [0.4, 0.9] (referencia 0.64).
+  - run_id, componente, status, exit code e duração;
+  - commit Git e worktree limpo/modificado;
+  - checksum e tamanho do executável;
+  - checksums e tamanhos dos inputs, outputs e log;
+  - cada comando, duração, exit code e ocorrência de timeout;
+  - período de graça entre TERM e KILL.
 
-T7. Graficos: graficos/conc_periodo_rline.png e
-    graficos/conc_aermod_vs_rline.png existem e nao sao vazios.
-
-T8. Exemplo e avaliacao da EPA: rodar RLINE em cada caso e comparar com o CSV
-    de referencia (tolerancia relativa ~1e-3 a 1e-2).
-
-Casos de uso (scripts/teste_casos.py):
-  T1. AERMOD rodou (CONC_PLOT.PLT nao-vazio).
-  T2. RLINE rodou (Output_*_Numerical.csv nao-vazio).
-  T3. Merge completo (todos os receptores do grid foram comparados).
-  T4. Concentracoes finitas e positivas.
-  T5. R^2(log) global >= 0.85 (rodovia cobrindo a grade) ou >= 0.65 (grade
-      muito maior que a rodovia).
-  T6. R^2(log) no trecho da rodovia >= 0.95.
-  T7. Razao mediana AERMOD/RLINE em [0.30, 1.20].
-  T8. Escala: max RLINE / max AERMOD <= 20 (consistencia de ordem de grandeza).
-
---------------------------------------------------------------------------------
-11. ESTRUTURA DE PASTAS ALVO
---------------------------------------------------------------------------------
-rline_and_documentation/
-├── PIPELINE_IMPLEMENTACAO.txt        <- este documento
-├── README.md                         <- documentacao principal (a reescrever)
-├── GUIA_RLINE.md
-├── GUIA_PIPELINE_AERMET_AERMOD_RLINE.md
-├── PLANO_Compilacao_Uso_RLINE.md
-├── RLINE_UserGuide_11-13-2013.pdf
-├── aermet_and_aermod/
-│   ├── aermet_source/               (fontes + aermet compilado)
-│   ├── aermod_source/aermod_source_v26135/ (fontes + aermod compilado)
-│   ├── aermet_userguide.pdf
-│   └── aermod_implementation_guide.pdf
-├── RLINE_v1_2.Source/v1_2/          (fontes + Makefile + RLINEv1_2_gfortran.x)
-├── RLINE_v1_2.Example_Cases/Example_case/
-├── RLINE_v1_2.Evaluation_Data/Evaluation_data/
-│   ├── CALTRANS_RLINE/
-│   ├── IdahoFalls_RLINE/
-│   └── Raleigh_RLINE/
-├── Caso_Pipeline/
-│   ├── dados_aermet/    (ONSITE.MET, ONSITE.SFC/.PFL, QAOUT, reports)
-│   ├── controles_aermod/(RLINE_TEST.INP)
-│   ├── rodada_aermod/   (ONSITE.SFC/.PFL, RLINE_TEST.out, CONC_PLOT.PLT)
-│   ├── rodada_rline/    (Source_Road.txt, Receptor_Road.txt,
-│   │                     Line_Source_Inputs.txt, Output_*.csv, binario)
-│   ├── scripts/         (gerar_dados_onsite.py, compare_aermod_rline.py,
-│   │                     plot_conc_aermod_rline.py, plot_compare_aermod_rline.py)
-│   └── graficos/        (conc_periodo_rline.png, conc_aermod_vs_rline.png)
-├── casos/               (casos de uso — config.json, controles, rodadas,
-│   ├── caso1_referencia/    graficos e resumos por cenário)
-│   ├── caso2_rodovia_curta/
-│   ├── caso3_emissao_alta/
-│   ├── caso4_rodovia_larga/
-│   └── comparativo_geral.png
-└── scripts/             (automacao: gerar_grade.py, gerar_caso.py,
-                          run_aermet.sh, run_aermod.sh, run_rline.sh,
-                          run_pipeline.sh, run_caso.sh, run_todos_casos.sh,
-                          postprocess_caso.py, plot_casos_resumo.py,
-                          teste_casos.py)
+RUN_KILL_GRACE_SECONDS tem padrão 5 s. RUN_LOG_DIR altera o destino dos logs.
 
 --------------------------------------------------------------------------------
-12. REFERENCIAS
+8. PACOTE rline_pipeline E SCHEMA JSON V1
 --------------------------------------------------------------------------------
-  - RLINE_UserGuide_11-13-2013.pdf            (guia do RLINE v1.2)
-  - aermet_userguide.pdf                       (AERMET User Guide, Tabelas B-3/B-4)
-  - aermod_implementation_guide.pdf            (AERMOD Implementation Guide)
-  - appendix_w-2024.pdf                        (Apêndice W, formulacao RLINE)
-  - GUIA_RLINE.md                              (conceitos RLINE, uso standalone)
-  - GUIA_PIPELINE_AERMET_AERMOD_RLINE.md       (pipeline completo validado)
-  - PLANO_Compilacao_Uso_RLINE.md              (compilacao e uso, rodada NWS)
+
+pyproject.toml instala o pacote rline_pipeline e inclui o schema:
+
+  rline_pipeline/schemas/case-config-v1.schema.json
+
+Campos obrigatórios de config.json:
+
+  schema_version = 1
+  nome
+  descricao
+  comprimento
+  y_rodovia
+  qs
+  width
+  grid {xini, xn, xdelta, yini, yn, ydelta}
+  transecto_x
+  periodos_esperados
+
+Campo opcional:
+
+  emis_fator
+
+Validações:
+
+  - propriedades desconhecidas são rejeitadas;
+  - números devem ser finitos;
+  - cada eixo deve ter ao menos dois pontos distintos após conversão para float;
+  - a grade pode ter no máximo 1.000.000 de receptores;
+  - deltas, comprimento, emissão e períodos devem ser positivos;
+  - a rodovia deve interceptar a extensão X da grade;
+  - y_rodovia deve pertencer à extensão Y;
+  - transecto_x deve estar na interseção entre rodovia e grade.
+
+generation.py usa aritmética Decimal para evitar acúmulo de erro nas
+coordenadas e regenera deterministicamente:
+
+  controles_aermod/RLINE_TEST.INP
+  rodada_rline/Source_Road.txt
+  rodada_rline/Receptor_Road.txt
+  rodada_rline/Line_Source_Inputs.txt
+  metadados.txt
+
+Se um input efetivo do modelo muda, resultados AERMOD/RLINE e artefatos de
+pós-processamento anteriores são invalidados antes da publicação dos novos
+inputs.
+
+--------------------------------------------------------------------------------
+9. PARSING, MERGE, MÉTRICAS E GRÁFICOS
+--------------------------------------------------------------------------------
+
+parse_aermod exige:
+
+  - arquivo não vazio e oito linhas de cabeçalho;
+  - dez colunas esperadas;
+  - valores numéricos finitos e concentração não negativa;
+  - AVE = PERIOD;
+  - NHRS igual aos períodos declarados;
+  - coordenadas únicas e identidade com a grade esperada.
+
+parse_rline exige:
+
+  - 12 linhas de cabeçalho e nomes de coluna esperados;
+  - sete colunas, mais uma coluna final opcional vazia;
+  - nenhuma linha descartada, inclusive a última;
+  - valores finitos e concentração sem sentinela negativa;
+  - Year/JD/Hour inteiros e em domínio;
+  - chave Year/JD/Hour/X/Y única;
+  - exatamente todos os períodos para cada receptor;
+  - cardinalidade receptores x períodos;
+  - identidade bijetiva com a grade declarada.
+
+analysis.py agrega a média temporal do RLINE e faz merge AERMOD/RLINE com
+validate="one_to_one". Não arredonda coordenadas. A tolerância padrão de 0.001 m
+só é aceita quando cada ponto possui uma correspondência única nos dois lados.
+
+plotting.py:
+
+  - usa pivot(index="Y", columns="X") em vez de reshape por ordem;
+  - rejeita células ausentes ou duplicadas;
+  - desenha a rodovia entre 0 e comprimento, no y_rodovia real;
+  - seleciona o X de grade mais próximo do transecto configurado;
+  - usa Y no eixo do transecto perpendicular;
+  - mostra R2 global e R2 do trecho, sem rotular razão como R2.
+
+--------------------------------------------------------------------------------
+10. CASOS CONFIGURADOS E RESULTADOS HISTÓRICOS
+--------------------------------------------------------------------------------
+
+Casos:
+
+  caso1_referencia
+    comprimento 1000 m, QS 0.001, width 20 m, grade 26 x 31.
+
+  caso2_rodovia_curta
+    comprimento 300 m, QS 0.001, width 20 m, grade 21 x 21.
+
+  caso3_emissao_alta
+    comprimento 1000 m, QS 0.005, width 20 m, grade 21 x 21.
+
+  caso4_rodovia_larga
+    comprimento 1000 m, QS 0.001, width 40 m, grade 21 x 21.
+
+run_todos_casos.sh regenera os inputs a partir de cada config.json, executa
+run_caso.sh, gera comparativo_geral.png e roda teste_casos.py.
+
+Os resultados já versionados pertencem ao fluxo histórico com o RLINE original.
+Eles são preservados sem alteração e não devem ser apresentados como saídas da
+variante corrigida:
+
+  caso1: max AERMOD 48966.6 | max RLINE 154045.2 | R2 trecho 0.9584
+  caso2: max AERMOD 48378.6 | max RLINE 150076.9 | R2 trecho 0.9790
+  caso3: max AERMOD 244833.0 | max RLINE 770226.2 | R2 trecho 0.9638
+  caso4: max AERMOD 90142.0 | max RLINE 256727.6 | R2 trecho 0.9551
+
+No caso canônico histórico, 153272.168 ug/m3 é o valor do RLINE original no
+ponto X=600 m, Y=0. A documentação antiga o chamou de máximo. O máximo global
+da grade histórica é 154045.225 ug/m3, em outro receptor.
+
+Uma execução nova usa o RLINE corrigido e deve ser associada ao log e manifesto
+daquela execução.
+
+--------------------------------------------------------------------------------
+11. TESTES T1-T8 DOS CASOS
+--------------------------------------------------------------------------------
+
+scripts/teste_casos.py descobre casos pela presença de config.json. Ausência de
+output não remove um caso da avaliação.
+
+T1. AERMOD
+    Exige relatório de conclusão, zero erros fatais, número exato de horas,
+    grade completa e CONC_PLOT.PLT válido.
+
+T2. RLINE
+    Exige todos os receptores, todos os períodos e exatamente
+    receptores x períodos linhas.
+
+T3. Merge
+    Exige correspondência bijetiva e merge one-to-one completo.
+
+T4. Domínio
+    Exige concentrações finitas e estritamente positivas.
+
+T5. Correlação global
+    Exige correlação log positiva e R2 >= 0.85. Quando a rodovia cobre menos de
+    60% da extensão X da grade, o limite é 0.65.
+
+T6. Correlação no trecho
+    Exige correlação log positiva e R2 >= 0.95 nos receptores cuja coordenada X
+    pertence ao segmento real da rodovia.
+
+T7. Razão mediana
+    Exige 0.30 <= mediana(AERMOD/RLINE) <= 1.20.
+
+T8. Escala bilateral
+    Exige 1/20 <= max(AERMOD)/max(RLINE) <= 20.
+
+Comando:
+
+  python3 scripts/teste_casos.py
+
+--------------------------------------------------------------------------------
+12. AUTOMAÇÃO IMPLEMENTADA
+--------------------------------------------------------------------------------
+
+12.1 scripts/gerar_grade.py
+     Gera Source_Road.txt e Receptor_Road.txt com validação e coordenadas
+     decimais determinísticas.
+
+12.2 scripts/gerar_caso.py
+     Valida config.json schema v1 e regenera todos os inputs de um caso.
+
+12.3 scripts/run_aermet.sh
+     Executa Stages 1 e 2 transacionalmente.
+
+12.4 scripts/run_aermod.sh
+     Estagia controle e meteorologia, executa e valida AERMOD.
+
+12.5 scripts/run_rline.sh
+     Estagia os quatro inputs, executa a variante escolhida e publica CSVs.
+
+12.6 scripts/run_pipeline.sh
+     Orquestra o pipeline canônico completo.
+
+12.7 scripts/run_caso.sh
+     Executa AERMOD, RLINE corrigido e pós-processamento de um caso.
+
+12.8 scripts/run_todos_casos.sh
+     Regenera e executa os quatro casos, gera comparativo e executa T1-T8.
+
+12.9 scripts/postprocess_caso.py
+     Interface do pós-processamento central validado.
+
+12.10 scripts/plot_casos_resumo.py
+      Descobre casos por config.json e gera comparativo_geral.png.
+
+12.11 scripts/teste_casos.py
+      Implementa T1-T8 e relata todos os casos descobertos.
+
+12.12 scripts/scientific_regression.py
+      Executa checks, regressões EPA, diagnósticos da variante original e,
+      opcionalmente, o pipeline completo.
+
+12.13 scripts/write_run_manifest.py
+      Grava atomicamente o manifesto JSON schema v1.
+
+12.14 scripts/lib/run_common.sh
+      Implementa caminhos, locks, grupos, timeout, publicação, logs e
+      manifestos compartilhados.
+
+Os scripts históricos de Caso_Pipeline/scripts/ delegam parsing, métricas e
+gráficos ao pacote rline_pipeline. Não possuem caminhos absolutos de máquina.
+
+--------------------------------------------------------------------------------
+13. REGRESSÃO CIENTÍFICA EPA
+--------------------------------------------------------------------------------
+
+Comando padrão:
+
+  make scientific-regression
+
+O alvo:
+
+  - depende de make models;
+  - executa a suíte pytest não científica;
+  - valida os quatro resultados versionados;
+  - executa a variante corrigida para Example Case, CALTRANS, Idaho Falls e
+    Raleigh duas vezes por padrão em diretórios temporários;
+  - compara schema, contagem, todas as chaves ordenadas e todas as colunas de
+    concentração;
+  - executa a variante original duas vezes por padrão para diagnóstico de
+    determinismo;
+  - nunca substitui golden files;
+  - grava relatório JSON schema v2 e logs em REGRESSION_ARTIFACT_DIR ou, por
+    padrão, build/scientific-regression/;
+  - usa lock exclusivo do diretório de artefatos, escrita atômica do relatório
+    e hashes de inputs, goldens, executáveis e outputs.
+
+Resultados reais da variante corrigida:
+
+  Caso          Máximo observado   Limite
+  Example Case       1.789152%      1.9%
+  CALTRANS           0.523329%      0.55%
+  Idaho Falls        0.088408%      0.095%
+  Raleigh            0.314472%      0.33%
+
+Todos estão dentro dos limites definidos em scientific_regression.py. A
+tolerância absoluta de 1e-6 unidade de saída é usada somente perto de golden
+zero.
+
+A variante original é diagnóstica e não é requisito de aprovação. Essa decisão
+evita que comportamento indefinido conhecido no upstream bloqueie a validação
+da variante corrigida, sem esconder seu resultado.
+
+Com:
+
+  RUN_FULL_PIPELINE=1 make scientific-regression
+
+a etapa adicional primeiro executa o pipeline canônico, incluindo AERMET
+Stages 1/2, AERMOD, RLINE corrigido e pós-processamento. Depois copia os quatro
+config.json para diretórios temporários, regenera os inputs e executa os quatro
+casos. Logs e manifestos são copiados para o diretório de artefatos.
+
+--------------------------------------------------------------------------------
+14. INTEGRAÇÃO CONTÍNUA
+--------------------------------------------------------------------------------
+
+.github/workflows/ci.yml:
+
+  - push, pull request e workflow_dispatch;
+  - Python 3.11;
+  - valida sintaxe Shell;
+  - executa os testes rápidos;
+  - recompila AERMET, AERMOD, RLINE original, corrigido release e debug;
+  - verifica checkout limpo e que o build não altera o worktree.
+
+.github/workflows/scientific-regression.yml:
+
+  - execução semanal às segundas, 03:17 UTC, e manual;
+  - worktree isolado;
+  - rebuild de todas as variantes;
+  - RUN_FULL_PIPELINE=1;
+  - rejeita mudanças nos resultados versionados;
+  - retém metadados, relatório, logs e manifestos por 14 dias;
+  - não atualiza nem publica goldens.
+
+--------------------------------------------------------------------------------
+15. ESTRUTURA PRINCIPAL
+--------------------------------------------------------------------------------
+
+  Makefile
+  pyproject.toml
+  rline_pipeline/
+  scripts/
+  scripts/lib/run_common.sh
+  patches/rline-v1.2/
+  tests/
+  docs/REPRODUCIBILITY.md
+  .github/workflows/
+  Caso_Pipeline/
+  casos/
+  RLINE_v1_2.Source/v1_2/
+  RLINE_v1_2.Example_Cases/Example_case/
+  RLINE_v1_2.Evaluation_Data/Evaluation_data/
+  build/                                  artefatos ignorados
+
+--------------------------------------------------------------------------------
+16. COMANDOS DE VERIFICAÇÃO
+--------------------------------------------------------------------------------
+
+  make models
+  make rline-debug
+  make test
+  make quality
+  python3 scripts/teste_casos.py
+  make scientific-regression
+  RUN_FULL_PIPELINE=1 make scientific-regression
+  git diff --check
+
+Documentação relacionada:
+
+  README.md
+  GUIA_RLINE.md
+  GUIA_PIPELINE_AERMET_AERMOD_RLINE.md
+  PLANO_Compilacao_Uso_RLINE.md
+  PLANO_MELHORIAS_PROJETO.md
+  docs/REPRODUCIBILITY.md
+  CONTRIBUTING.md
 
 ================================================================================
-FIM DO DOCUMENTO
+FIM
 ================================================================================

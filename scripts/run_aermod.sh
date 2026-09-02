@@ -1,85 +1,98 @@
 #!/usr/bin/env bash
-# ---------------------------------------------------------------------------
-# scripts/run_aermod.sh
-# Copia ONSITE.SFC/.PFL para a pasta de rodada, executa o AERMOD em background
-# (setsid) com o control file RLINE_TEST.INP e valida
-# "AERMOD Finishes Successfully".
-#
-# Uso:
-#   bash scripts/run_aermod.sh <dir_rodada> <bin_aermod> [control_file]
-#   Ex.: bash scripts/run_aermod.sh Caso_Pipeline/rodada_aermod \
-#            aermet_and_aermod/aermod_source/aermod_source_v26135/aermod \
-#            Caso_Pipeline/controles_aermod/RLINE_TEST.INP
-# ---------------------------------------------------------------------------
+# Run AERMOD transactionally. Inputs are staged, stale outputs are excluded and
+# the report/plot are published only after exit-code and content validation.
+
 set -euo pipefail
 
-AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RAIZ="$(cd "$AQUI/.." && pwd)"
+AQUI="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+RAIZ="$(cd -- "$AQUI/.." && pwd)"
+source "$AQUI/lib/run_common.sh"
 
-DIR_RODADA="${1:?Uso: run_aermod.sh <dir_rodada> <bin_aermod> [control_file]}"
-BIN_AERMOD="${2:?Uso: run_aermod.sh <dir_rodada> <bin_aermod> [control_file]}"
-INP="${3:-Caso_Pipeline/controles_aermod/RLINE_TEST.INP}"
-DIR_DADOS_AERMET="${4:-Caso_Pipeline/dados_aermet}"
+PIPELINE_DIR="${PIPELINE_CASE_DIR:-$RAIZ/Caso_Pipeline}"
+DIR_RODADA_ARG="${1:-${DIR_RODADA_AERMOD:-$PIPELINE_DIR/rodada_aermod}}"
+BIN_AERMOD_ARG="${2:-${BIN_AERMOD:-$RAIZ/build/aermod/aermod}}"
+INP_ARG="${3:-${INP_AERMOD:-$PIPELINE_DIR/controles_aermod/RLINE_TEST.INP}}"
+DIR_DADOS_ARG="${4:-${DIR_DADOS_AERMET:-$PIPELINE_DIR/dados_aermet}}"
+TIMEOUT_SECONDS="${AERMOD_TIMEOUT_SECONDS:-${RUN_TIMEOUT_SECONDS:-1800}}"
 
-case "$BIN_AERMOD" in
-    /*) BIN_AERMOD_ABS="$BIN_AERMOD" ;;
-    *)  BIN_AERMOD_ABS="$RAIZ/$BIN_AERMOD" ;;
-esac
-case "$INP" in
-    /*) INP_ABS="$INP" ;;
-    *)  INP_ABS="$RAIZ/$INP" ;;
-esac
-case "$DIR_RODADA" in
-    /*) DIR_RODADA_ABS="$DIR_RODADA" ;;
-    *)  DIR_RODADA_ABS="$RAIZ/$DIR_RODADA" ;;
-esac
+DIR_RODADA_ABS="$(resolve_project_path "$DIR_RODADA_ARG")"
+BIN_AERMOD_ABS="$(resolve_project_path "$BIN_AERMOD_ARG")"
+INP_ABS="$(resolve_project_path "$INP_ARG")"
+DIR_DADOS_ABS="$(resolve_project_path "$DIR_DADOS_ARG")"
+run_init "aermod" "$DIR_RODADA_ABS" "$BIN_AERMOD_ABS"
 
-if [ ! -x "$BIN_AERMOD_ABS" ]; then
-    echo "ERRO: binario AERMOD nao encontrado: $BIN_AERMOD_ABS" >&2
-    exit 1
+if [[ ! -x "$BIN_AERMOD_ABS" ]]; then
+    run_fail 69 "ERRO: binario AERMOD nao encontrado em $BIN_AERMOD_ABS; execute 'make aermod' ou defina BIN_AERMOD"
 fi
-if [ ! -f "$INP_ABS" ]; then
-    echo "ERRO: control file AERMOD nao encontrado: $INP_ABS" >&2
-    exit 1
+if ! require_nonempty_file "$INP_ABS"; then
+    run_fail 66 "ERRO: control file AERMOD ausente ou vazio: $INP_ABS"
 fi
-
-mkdir -p "$DIR_RODADA_ABS"
-cd "$DIR_RODADA_ABS"
-
-# Met pronta do AERMET (aceita caminho absoluto ou relativo a raiz)
-case "$DIR_DADOS_AERMET" in
-    /*) DADOS_AERMET_ABS="$DIR_DADOS_AERMET" ;;
-    *)  DADOS_AERMET_ABS="$RAIZ/$DIR_DADOS_AERMET" ;;
-esac
-cp -f "$DADOS_AERMET_ABS/ONSITE.SFC" .
-cp -f "$DADOS_AERMET_ABS/ONSITE.PFL" .
-cp -f "$INP_ABS" ./
-
-echo ">>> AERMOD em $(pwd) (setsid, background)"
-setsid "$BIN_AERMOD_ABS" "$(basename "$INP_ABS")" > AERMOD_RUN.out 2>&1 &
-PID=$!
-echo ">>> PID=$PID  aguardando termino..."
-
-# Aguarda o processo sair (timeout de 30 min)
-SECONDS=0
-while kill -0 "$PID" 2>/dev/null; do
-    if [ "$SECONDS" -gt 1800 ]; then
-        echo "ERRO: timeout (30 min) aguardando o AERMOD" >&2
-        exit 1
+for met_name in ONSITE.SFC ONSITE.PFL; do
+    if ! require_nonempty_file "$DIR_DADOS_ABS/$met_name"; then
+        run_fail 66 "ERRO: input meteorologico ausente ou vazio: $DIR_DADOS_ABS/$met_name"
     fi
-    sleep 5
 done
-wait "$PID" || true
+run_add_input "$INP_ABS"
+run_add_input "$DIR_DADOS_ABS/ONSITE.SFC"
+run_add_input "$DIR_DADOS_ABS/ONSITE.PFL"
 
-OUT="$(basename "$INP_ABS")"
-OUT="${OUT%.INP}.out"
-if [ ! -f "$OUT" ]; then
-    OUT="AERMOD_RUN.out"
+CONTROL_NAME="$(basename -- "$INP_ABS")"
+CONTROL_STEM="${CONTROL_NAME%.*}"
+MODEL_REPORT="$CONTROL_STEM.out"
+WORK_DIR="$RUN_WORKSPACE/rodada_aermod"
+mkdir -p -- "$WORK_DIR"
+if ! copy_tree_without_runtime "$DIR_RODADA_ABS" "$WORK_DIR"; then
+    run_fail 73 "ERRO: falha ao preparar workspace AERMOD: $WORK_DIR"
 fi
-echo ">>> Log de saida: $OUT"
-if ! grep -qi "AERMOD Finishes Successfully" "$OUT"; then
-    echo "ERRO: AERMOD nao terminou com sucesso (ver $OUT)" >&2
-    grep -i "error" "$OUT" | head -20 || true
-    exit 1
+rm -f -- "$WORK_DIR/$MODEL_REPORT" "$WORK_DIR/CONC_PLOT.PLT" "$WORK_DIR/AERMOD_RUN.out"
+cp -f -- "$INP_ABS" "$WORK_DIR/$CONTROL_NAME"
+cp -f -- "$DIR_DADOS_ABS/ONSITE.SFC" "$WORK_DIR/ONSITE.SFC"
+cp -f -- "$DIR_DADOS_ABS/ONSITE.PFL" "$WORK_DIR/ONSITE.PFL"
+run_add_output "$WORK_DIR/$MODEL_REPORT"
+run_add_output "$WORK_DIR/CONC_PLOT.PLT"
+
+if run_timed_command "$WORK_DIR" "$TIMEOUT_SECONDS" "AERMOD" \
+    "$BIN_AERMOD_ABS" "$CONTROL_NAME"; then
+    :
+else
+    command_status=$?
+    run_fail_command "AERMOD" "$command_status"
 fi
-echo ">>> AERMOD OK (CONC_PLOT.PLT gerado)"
+
+if ! require_file_contains "$WORK_DIR/$MODEL_REPORT" \
+    'AERMOD[[:space:]]+Finishes[[:space:]]+Successfully'; then
+    run_fail 65 "ERRO: AERMOD nao gerou $MODEL_REPORT novo com mensagem de sucesso"
+fi
+if ! require_file_contains "$WORK_DIR/CONC_PLOT.PLT" 'AERMOD|PLOT[[:space:]]+FILE'; then
+    run_fail 65 "ERRO: AERMOD nao gerou CONC_PLOT.PLT novo, nao vazio e com cabecalho valido"
+fi
+if PYTHONPATH="$RAIZ" python3 - "$WORK_DIR/$MODEL_REPORT" "$WORK_DIR/CONC_PLOT.PLT" <<'PY'
+import sys
+
+from rline_pipeline import parse_aermod, validate_aermod_completion
+
+plot = parse_aermod(sys.argv[2])
+hours = plot["NHRS"].unique().tolist()
+if len(hours) != 1:
+    raise ValueError(f"CONC_PLOT.PLT has inconsistent NHRS values: {hours}")
+validate_aermod_completion(sys.argv[1], int(hours[0]))
+PY
+then
+    :
+else
+    validation_status=$?
+    run_fail "$validation_status" "ERRO: outputs AERMOD falharam na validacao estrutural estrita"
+fi
+
+PUBLISH=("$CONTROL_NAME" ONSITE.SFC ONSITE.PFL "$MODEL_REPORT" CONC_PLOT.PLT)
+if publish_files "$WORK_DIR" "$DIR_RODADA_ABS" "${PUBLISH[@]}"; then
+    :
+else
+    publish_status=$?
+    run_fail "$publish_status" "ERRO: falha ao publicar outputs validados do AERMOD"
+fi
+
+run_set_outputs "$DIR_RODADA_ABS/$MODEL_REPORT" "$DIR_RODADA_ABS/CONC_PLOT.PLT"
+run_log ">>> AERMOD OK: CONC_PLOT.PLT publicado em $DIR_RODADA_ABS"
+run_log ">>> Log exclusivo: $RUN_LOG"
+run_mark_success

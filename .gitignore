@@ -1,6 +1,11 @@
 .serena/
 *.tmp
 __pycache__/
+.pytest_cache/
+*.egg-info/
+/build/
+**/logs/
+**/.*.lock
 
 # Artefatos de compilacao Fortran (os binarios sao versionados)
 *.o

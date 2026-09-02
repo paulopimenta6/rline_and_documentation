@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  MPLBACKEND: Agg
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONHASHSEED: "0"
+
+jobs:
+  quality:
+    name: Python and shell checks
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out a clean tree
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify clean checkout
+        run: |
+          if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
+            git status --short
+            exit 1
+          fi
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes gfortran make patch
+
+      - name: Install project dependencies
+        run: bash .github/scripts/install-python-deps.sh
+
+      - name: Validate Bash syntax
+        run: git ls-files -z -- "*.sh" | xargs -0 -r -n 1 bash -n
+
+      - name: Run Python tests
+        run: |
+          status=0
+          python -m pytest -m "not scientific" || status=$?
+          if [[ "$status" -eq 5 ]]; then
+            echo "No pytest tests were collected; running the legacy Python verification suite."
+            python scripts/teste_casos.py
+          elif [[ "$status" -ne 0 ]]; then
+            exit "$status"
+          fi
+
+  model-builds:
+    name: Clean model builds
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out a clean tree
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify clean checkout
+        run: |
+          if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
+            git status --short
+            exit 1
+          fi
+
+      - name: Install model build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes gfortran make patch
+
+      - name: Clean-build AERMET, AERMOD, and both RLINE variants
+        env:
+          JOBS: "2"
+        run: bash .github/scripts/build-models.sh all

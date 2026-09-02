@@ -1,0 +1,225 @@
+--- a/Read_Receptors.f90
++++ b/Read_Receptors.f90
+@@ -24,41 +24,65 @@
+ 
+       Use Data_Structures
+       Use Line_Source_Data                      ! Include library
++      Use RLINE_Validation, only: Require_Allocation, Require_IO
++      Use ieee_arithmetic, only: ieee_is_finite
++      Use iso_fortran_env, only: error_unit
+       Implicit None
+ 
+ ! Local variables:
+-      Integer             ::    index, Size     ! Index used to read met information
++      Integer             ::    index, Size, HeaderIndex
+       Integer             ::    AllocateStatus  ! Integer that indicates read status
+-      Integer             ::    ReadStatus      ! Integer that indicates read status
++      Integer             ::    ReadStatus, CloseStatus
+       Character(len=200)  ::    testread        ! dummy variable for testing input lines for comments
++      Character(len=256)  ::    IOMessage, Operation
+ ! -----------------------------------------------------------------------------------
+     
+       Call Compute_File_Size(Size, ReceptorFileName)
+       Number_Receptors=Size-3
++      if (Number_Receptors <= 0) then
++        write(error_unit,'(A)') "RLINE error: receptor file has no receptor records: "// &
++                                trim(ReceptorFileName)
++        error stop 1
++      end if
+       Allocate(Receptor(Number_Receptors),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Receptor")
+       Allocate(Xrcp_rot(Number_Receptors),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Xrcp_rot")
+       Allocate(Yrcp_rot(Number_Receptors),Stat=AllocateStatus)
+-      Open(Unit=11, File=ReceptorFileName, Status="Old", Action="Read", Iostat=ReadStatus)
+-      Read(11,*)
+-      Read(11,*)
+-      Read(11,*)
++      Call Require_Allocation(AllocateStatus,"Yrcp_rot")
++      Open(Unit=11, File=ReceptorFileName, Status="Old", Action="Read", &
++           Iostat=ReadStatus, Iomsg=IOMessage)
++      Call Require_IO(ReadStatus,"opening "//trim(ReceptorFileName),IOMessage)
++      do HeaderIndex=1,3
++        Read(11,'(A)',Iostat=ReadStatus,Iomsg=IOMessage)testread
++        Call Require_IO(ReadStatus,"reading receptor header",IOMessage)
++      end do
+ 
+       index=1
+       do while (index.LE.Number_Receptors)
+-        Read(11,'(A)')testread
++        Read(11,'(A)',Iostat=ReadStatus,Iomsg=IOMessage)testread
++        Write(Operation,'(A,I0)') "reading receptor record near index ",index
++        Call Require_IO(ReadStatus,Operation,IOMessage)
+         testread = adjustl(testread) 
+         if(testread.NE.'')then
+           if(testread(1:1).NE.'!')then
+             read(testread,*,iostat=readstatus)Receptor(index)
+             if(readstatus.ne.0)then
+-              print *,"Error reading receptor file near index ",index
+-              stop
++              write(error_unit,'(A,I0)') "RLINE error: invalid receptor near index ",index
++              error stop 1
++            end if
++            if (.not. ieee_is_finite(Receptor(index)%Xr) .or. &
++                .not. ieee_is_finite(Receptor(index)%Yr) .or. &
++                .not. ieee_is_finite(Receptor(index)%Zr)) then
++              write(error_unit,'(A,I0)') "RLINE error: non-finite receptor near index ",index
++              error stop 1
+             end if
+             index=index+1
+           end if
+         end if
+       end do
+ 
+-      Close(Unit=11)
++      Close(Unit=11,Iostat=CloseStatus,Iomsg=IOMessage)
++      Call Require_IO(CloseStatus,"closing "//trim(ReceptorFileName),IOMessage)
+ 
+-      End Subroutine
+\ No newline at end of file
++      End Subroutine
+--- a/Read_Sources.f90
++++ b/Read_Sources.f90
+@@ -24,51 +24,105 @@
+ 
+       Use Data_Structures
+       Use Line_Source_Data                ! Include library
++      Use RLINE_Validation, only: Require_Allocation, Require_IO
++      Use ieee_arithmetic, only: ieee_is_finite
++      Use iso_fortran_env, only: error_unit
+       Implicit None
+ 
+ ! Local variables:
+-      Integer             ::    index, Size        ! Index used to read met information
++      Integer             ::    index, Size, HeaderIndex
+       Integer             ::    AllocateStatus     ! Integer that indicates read status
+-      Integer             ::    ReadStatus         ! Integer that indicates read status
++      Integer             ::    ReadStatus, CloseStatus, DeallocateStatus
+       Integer             ::    s                  ! index for storing groups 
+       Integer             ::    i,n                ! counting indices
+       Character(len=200)  ::    testread           ! dummy variable for testing input lines for comments
++      Character(len=256)  ::    IOMessage, Operation
+       Character(len=40), Allocatable   :: Temp_Names(:)
++      Real(kind=double)   :: SourceLength, GeometryScale, GeometryTolerance
+ ! -----------------------------------------------------------------------------------
+ 
+       call Compute_File_Size(Size, SourceFileName)
+       Number_Sources=Size-3
++      if (Number_Sources <= 0) then
++        write(error_unit,'(A)') "RLINE error: source file has no source records: "// &
++                                trim(SourceFileName)
++        error stop 1
++      end if
+       allocate(Source(Number_Sources),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Source")
+       allocate(Xsb_rot(Number_Sources),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Xsb_rot")
+       allocate(Ysb_rot(Number_Sources),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Ysb_rot")
+       allocate(Xse_rot(Number_Sources),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Xse_rot")
+       allocate(Yse_rot(Number_Sources),Stat=AllocateStatus)
+-      Open(Unit=11, File=SourceFileName, Status="Old", Action="Read", Iostat=ReadStatus)
+-      Read(11,*)
+-      Read(11,*)
+-      Read(11,*)
++      Call Require_Allocation(AllocateStatus,"Yse_rot")
++      Open(Unit=11, File=SourceFileName, Status="Old", Action="Read", &
++           Iostat=ReadStatus, Iomsg=IOMessage)
++      Call Require_IO(ReadStatus,"opening "//trim(SourceFileName),IOMessage)
++      do HeaderIndex=1,3
++        Read(11,'(A)',Iostat=ReadStatus,Iomsg=IOMessage)testread
++        Call Require_IO(ReadStatus,"reading source header",IOMessage)
++      end do
+   
+       index=1
+       do while (index.LE.Number_Sources)
+-        Read(11,'(A)')testread
++        Read(11,'(A)',Iostat=ReadStatus,Iomsg=IOMessage)testread
++        Write(Operation,'(A,I0)') "reading source record near index ",index
++        Call Require_IO(ReadStatus,Operation,IOMessage)
+         testread = adjustl(testread) 
+         if(testread.NE.'')then
+           if(testread(1:1).NE.'!')then
+             read(testread,*,iostat=readstatus)Source(index)
+             if(readstatus.ne.0)then
+-              print *,"Error reading source file near index ",index
+-              stop
++              write(error_unit,'(A,I0)') "RLINE error: invalid source near index ",index
++              error stop 1
++            end if
++            if (.not. all(ieee_is_finite((/ Source(index)%Xsb,Source(index)%Ysb, &
++                 Source(index)%Zsb,Source(index)%Xse,Source(index)%Yse,Source(index)%Zse, &
++                 Source(index)%dCL,Source(index)%init_sigmaz,Source(index)%Nlanes, &
++                 Source(index)%Qemis,Source(index)%hwall,Source(index)%dCL_wall, &
++                 Source(index)%hwall2,Source(index)%dCL_wall2,Source(index)%Depth, &
++                 Source(index)%wTop,Source(index)%wBottom /)))) then
++              write(error_unit,'(A,I0)') "RLINE error: non-finite source near index ",index
++              error stop 1
++            end if
++            GeometryScale=max(1.0_double,abs(Source(index)%Xsb),abs(Source(index)%Ysb), &
++                              abs(Source(index)%Zsb),abs(Source(index)%Xse), &
++                              abs(Source(index)%Yse),abs(Source(index)%Zse))
++            GeometryTolerance=100.0_double*epsilon(GeometryScale)*GeometryScale
++            SourceLength=sqrt((Source(index)%Xse-Source(index)%Xsb)**2+ &
++                              (Source(index)%Yse-Source(index)%Ysb)**2+ &
++                              (Source(index)%Zse-Source(index)%Zsb)**2)
++            if (SourceLength <= GeometryTolerance) then
++              write(error_unit,'(A,I0)') "RLINE error: zero-length source at index ",index
++              error stop 1
++            end if
++            if (Source(index)%hwall2 /= 0.0_double .or. &
++                Source(index)%dCL_wall2 /= 0.0_double) then
++              write(error_unit,'(A,I0,A)') "RLINE error: source ",index, &
++                " requests a second barrier, which R-LINE v1.2 patched does not implement"
++              error stop 1
++            end if
++            if (Source(index)%Depth < 0.0_double .and. &
++                (Source(index)%wTop <= 0.0_double .or. Source(index)%wBottom <= 0.0_double)) then
++              write(error_unit,'(A,I0)') &
++                "RLINE error: depressed source requires positive top and bottom widths; source ",index
++              error stop 1
+             end if
+             index=index+1
+           end if
+         end if
+       end do
+ 
+-      Close(Unit=11)
++      Close(Unit=11,Iostat=CloseStatus,Iomsg=IOMessage)
++      Call Require_IO(CloseStatus,"closing "//trim(SourceFileName),IOMessage)
+ 
+ ! ----Find the number of groups
+ 
+       allocate(Temp_Names(Number_Sources),Stat=AllocateStatus) 
++      Call Require_Allocation(AllocateStatus,"temporary source group names")
+       
+       Temp_Names(1) = Source(1)%group
+       s = 1   ! # groups
+@@ -91,15 +145,18 @@
+       Number_Groups = s
+ 
+       allocate(Group_Names(Number_Groups),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Group_Names")
+       
+       do i = 1,Number_Groups
+         Group_Names(i) = Temp_Names(i)
+       end do
+ 
+-      deallocate(Temp_Names)
++      deallocate(Temp_Names,Stat=DeallocateStatus)
++      Call Require_Allocation(DeallocateStatus,"deallocating temporary source group names")
+ 
+ ! ----Create array of source indices for each group
+       allocate(Group_Array(Number_Sources,Number_Groups),Stat=AllocateStatus)
++      Call Require_Allocation(AllocateStatus,"Group_Array")
+       Group_Array = 0; ! elements are 0 if not assigned
+ 
+       do i = 1,Number_Groups
+@@ -112,4 +169,4 @@
+         end do
+       end do 
+ 
+-      end subroutine
+\ No newline at end of file
++      end subroutine

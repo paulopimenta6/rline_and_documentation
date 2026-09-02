@@ -29,7 +29,7 @@ mod_upperair.o:   mod_main1.o mod_file_units.o
 mod_surface.o:    mod_main1.o mod_file_units.o
 mod_onsite.o:     mod_main1.o mod_file_units.o
 
-mod_pbl.o:        mod_main1.o mod_file_units.o mod_onsite.o mod_surface.o
+mod_pbl.o:        mod_main1.o mod_file_units.o mod_upperair.o mod_onsite.o mod_surface.o
 
 mod_read_input.o: mod_main1.o mod_file_units.o mod_upperair.o mod_surface.o \
                   mod_onsite.o mod_pbl.o

@@ -1,0 +1,72 @@
+--- a/Effective_Wind.f90
++++ b/Effective_Wind.f90
+@@ -23,6 +23,8 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       use Line_Source_Data
++      use iso_fortran_env, only: error_unit
++      use ieee_arithmetic, only: ieee_is_finite
+       implicit none
+ 
+ ! declare erf
+@@ -40,19 +42,34 @@
+       Real(kind=double), parameter  :: sq2pi = 0.797885
+ ! -----------------------------------------------------------------------------------
+ 
+-      sz=sigmaz(xd)
+-      err=10
+-      iter=1
+       uref = MOST_Wind(refht,zrough,dispht,ustar,Lmon)
++      if (.not. ieee_is_finite(uref) .or. uref <= tiny(uref)) then
++        write(error_unit,'(A)') "RLINE error: invalid reference wind in Effective_Wind"
++        error stop 1
++      end if
++
+       ueff=MOST_Wind(heff,zrough,dispht,ustar,Lmon)*Wspd/uref
++      ueff=sqrt(2.0_double*sigmav**2+ueff**2)
++      if (.not. ieee_is_finite(ueff) .or. ueff <= tiny(ueff)) then
++        write(error_unit,'(A)') "RLINE error: effective wind is not finite and positive"
++        error stop 1
++      end if
++
++      sz=sigmaz(xd)
++      err=10.0_double
++      iter=1
+       
+       do while ((err>1.0e-02).AND.(iter<20)) 
+         zbar = sq2pi*sz*exp(-0.5*(heff/sz)**2)+heff*erf(heff/(sqrt(2.0)*sz))
+         ueff=MOST_Wind(max(zbar,heff),zrough,dispht,ustar,Lmon)*Wspd/uref
+-        ueff=sqrt(2*sigmav**2+ueff**2)
++        ueff=sqrt(2.0_double*sigmav**2+ueff**2)
++        if (.not. ieee_is_finite(ueff) .or. ueff <= tiny(ueff)) then
++          write(error_unit,'(A)') "RLINE error: effective wind iteration failed"
++          error stop 1
++        end if
+         sz_new=sigmaz(xd)
+         err=abs((sz_new-sz)/sz)
+         sz=sz_new; iter=iter+1
+       end do
+   
+       end subroutine
+--- a/Sigmaz.f90
++++ b/Sigmaz.f90
+@@ -23,6 +23,8 @@
+ ! -----------------------------------------------------------------------------------
+ 
+       use Line_Source_Data
++      use iso_fortran_env, only: error_unit
++      use ieee_arithmetic, only: ieee_is_finite
+       implicit None
+ 
+ ! Local variables:
+@@ -40,6 +42,10 @@
+       sigmaz_max = sq2pi*zmixed
+       sigmazD    = 0.0
+       sigmazB    = 0.0
++      if (.not. ieee_is_finite(ueff) .or. ueff <= tiny(ueff)) then
++        write(error_unit,'(A)') "RLINE error: sigmaz requires a finite, positive ueff"
++        error stop 1
++      end if
+       utemp      = ueff ! use profiled wind speed, Ueff, for Udisp 
+       HB         = Source(indq)%hwall
+       dw         = (Source(indq)%dCL_wall - Source(indq)%dCL)

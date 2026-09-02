@@ -1,0 +1,45 @@
+Minimal patched RLINE control file
+Source File Name
+'sources.txt'
+Input emissions are in g/s/m
+--------------------------------------------------
+Receptor File Name
+'receptors.txt'
+--------------------------------------------------
+Input Met File
+'met.sfc'
+--------------------------------------------------
+Receptor Output File
+'output.csv'
+--------------------------------------------------
+Error_Limit
+1.0e-03
+--------------------------------------------------
+Ratio of displacement height to roughness length
+0.0
+--------------------------------------------------
+--- OUTPUT OPTIONS ---
+--------------------------------------------------
+Concentration option
+'T'
+--------------------------------------------------
+Output daily averages
+'N'
+--------------------------------------------------
+Hourly output option
+'A'
+--------------------------------------------------
+Suppress proximity warnings
+'Y'
+--------------------------------------------------
+--- BETA OPTIONS ---
+--------------------------------------------------
+Use analytical solution
+'N'
+--------------------------------------------------
+Use source configuration algorithms
+'N'
+--------------------------------------------------
+Use non-zero road width and lane width
+'N' 3.6
+--------------------------------------------------

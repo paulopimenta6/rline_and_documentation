@@ -1,0 +1,18 @@
+--- a/Line_Source_Data.f90
++++ b/Line_Source_Data.f90
+@@ -30 +30 @@
+-      character(len=50)    :: InputSurfaceFile    ! Name of text file that needs to be converted 
++      character(len=512)   :: InputSurfaceFile    ! Name of text file that needs to be converted 
+@@ -39,2 +39,2 @@
+-      character(len=40)    :: SourceFileName
+-      character(len=40)    :: OutputReceptorFile
++      character(len=512)   :: SourceFileName
++      character(len=512)   :: OutputReceptorFile
+@@ -63 +63 @@
+-      character(len=40)    :: ReceptorFileName
++      character(len=512)   :: ReceptorFileName
+--- a/Write_Hourly_by_Month.f90
++++ b/Write_Hourly_by_Month.f90
+@@ -36 +36 @@
+-      Character(len=40) :: WriteFile
++      Character(len=512) :: WriteFile

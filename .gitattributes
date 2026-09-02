@@ -1,0 +1,2 @@
+# Preserve upstream Fortran whitespace inside zero-fuzz patch files.
+patches/rline-v1.2/*.patch -whitespace

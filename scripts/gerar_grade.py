@@ -1,77 +1,103 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Gera a grade de receptores (26 x 31 = 806 pontos) e os arquivos de entrada do
-RLINE standalone (Receptor_Road.txt e Source_Road.txt), espelhando a geometria
-do control file AERMOD (RLINE_TEST.INP).
+"""Gera receptores e fonte RLINE usando a grade decimal do modulo central."""
 
-Uso:
-    python3 scripts/gerar_grade.py \
-        --saida Caso_Pipeline/rodada_rline \
-        --xini 0 --xn 26 --xdelta 40 \
-        --yini -300 --yn 31 --ydelta 20 \
-        --qs 0.001 --width 20.0 --comprimento 1000.0 --emis 0.02
-"""
-from __future__ import print_function
+from __future__ import annotations
+
 import argparse
-import os
+from pathlib import Path
+import sys
+import tempfile
+from typing import Sequence
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from rline_pipeline import (  # noqa: E402
+    SCHEMA_VERSION,
+    CaseConfig,
+    GridConfig,
+    PipelineValidationError,
+    validate_case_config,
+)
+from rline_pipeline.generation import (  # noqa: E402
+    build_receptor_file,
+    build_source_file,
+)
+from rline_pipeline._io import publish_file_set  # noqa: E402
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Gera grade de receptores e fonte RLINE")
-    ap.add_argument("--saida", default="Caso_Pipeline/rodada_rline",
-                    help="pasta onde gravar os arquivos (default: Caso_Pipeline/rodada_rline)")
-    ap.add_argument("--xini", type=float, default=0.0)
-    ap.add_argument("--xn", type=int, default=26)
-    ap.add_argument("--xdelta", type=float, default=40.0)
-    ap.add_argument("--yini", type=float, default=-300.0)
-    ap.add_argument("--yn", type=int, default=31)
-    ap.add_argument("--ydelta", type=float, default=20.0)
-    ap.add_argument("--comprimento", type=float, default=1000.0,
-                    help="comprimento da rodovia (m), de X=0 ate este valor")
-    ap.add_argument("--qs", type=float, default=0.001,
-                    help="QS (g/s/m2) usado no SRCPARAM do AERMOD")
-    ap.add_argument("--width", type=float, default=20.0,
-                    help="largura da rodovia (m), WIDTH do AERMOD")
-    ap.add_argument("--emis", type=float, default=None,
-                    help="Emis do RLINE (g/s/m). Default: QS x WIDTH")
-    args = ap.parse_args()
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Gera grade de receptores e fonte RLINE")
+    parser.add_argument("--saida", type=Path, default=Path("Caso_Pipeline/rodada_rline"))
+    parser.add_argument("--xini", type=float, default=0.0)
+    parser.add_argument("--xn", type=int, default=26)
+    parser.add_argument("--xdelta", type=float, default=40.0)
+    parser.add_argument("--yini", type=float, default=-300.0)
+    parser.add_argument("--yn", type=int, default=31)
+    parser.add_argument("--ydelta", type=float, default=20.0)
+    parser.add_argument("--comprimento", type=float, default=1000.0)
+    parser.add_argument("--qs", type=float, default=0.001)
+    parser.add_argument("--width", type=float, default=20.0)
+    parser.add_argument("--emis", type=float, default=None)
+    return parser
 
-    saida = os.path.abspath(args.saida)
-    os.makedirs(saida, exist_ok=True)
 
-    if args.emis is None:
-        args.emis = args.qs * args.width
+def _config_from_args(args: argparse.Namespace) -> CaseConfig:
+    grid = GridConfig(
+        xini=args.xini,
+        xn=args.xn,
+        xdelta=args.xdelta,
+        yini=args.yini,
+        yn=args.yn,
+        ydelta=args.ydelta,
+    )
+    overlap_start = max(0.0, grid.xini)
+    overlap_end = min(args.comprimento, grid.xmax)
+    transect = (overlap_start + overlap_end) / 2.0
+    config = CaseConfig(
+        schema_version=SCHEMA_VERSION,
+        nome="grade_avulsa",
+        descricao="Grade avulsa gerada pela interface de linha de comando",
+        comprimento=args.comprimento,
+        y_rodovia=0.0,
+        qs=args.qs,
+        width=args.width,
+        grid=grid,
+        transecto_x=transect,
+        periodos_esperados=120,
+        emis_fator=args.emis,
+    )
+    validate_case_config(config)
+    return config
 
-    xs = [round(args.xini + i * args.xdelta, 3) for i in range(args.xn)]
-    ys = [round(args.yini + j * args.ydelta, 3) for j in range(args.yn)]
 
-    # ---- Receptor_Road.txt (3 colunas: X Y Z)
-    rec_file = os.path.join(saida, "Receptor_Road.txt")
-    with open(rec_file, "w") as f:
-        f.write("This file contains receptor locations\n")
-        f.write("X_coordinate  Y_Coordinate  Z_Coordinate\n")
-        f.write("----------------------------------------------\n")
-        for y in ys:
-            for x in xs:
-                f.write("  %8.1f %8.1f %4.1f\n" % (x, y, 0.0))
-    nrec = args.xn * args.yn
+def main(argv: Sequence[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    try:
+        config = _config_from_args(args)
+    except PipelineValidationError as error:
+        print(f"ERRO: parametros invalidos: {error}", file=sys.stderr)
+        return 2
 
-    # ---- Source_Road.txt (18 colunas)
-    src_file = os.path.join(saida, "Source_Road.txt")
-    with open(src_file, "w") as f:
-        f.write("Source input file\n")
-        f.write("Group  X_b    Y_b    Z_b    X_e    Y_e    Z_e  dCL  sigmaz0 "
-                "#lanes  Emis  Hw1  dw1  Hw2  dw2 Depth  Wtop  Wbottom\n")
-        f.write("----------------------------------------------\n")
-        f.write("HWY 0.0 0.0 0.0 %.1f 0.0 0.0 0.0 0.0 1.0 %.4f 0.0 0.0 0.0 0.0 "
-                "0.0 0.0 0.0\n" % (args.comprimento, args.emis))
+    output_dir = args.saida.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    receptor_path = output_dir / "Receptor_Road.txt"
+    source_path = output_dir / "Source_Road.txt"
+    with tempfile.TemporaryDirectory(prefix="rline-grid-") as temporary:
+        staging = Path(temporary)
+        staged_receptors = staging / receptor_path.name
+        staged_source = staging / source_path.name
+        staged_receptors.write_text(build_receptor_file(config), encoding="utf-8", newline="\n")
+        staged_source.write_text(build_source_file(config), encoding="utf-8", newline="\n")
+        publish_file_set(((staged_receptors, receptor_path), (staged_source, source_path)))
 
-    print("Receptores gerados:", nrec)
-    print("Arquivo de receptores:", rec_file)
-    print("Arquivo de fontes   :", src_file)
-    print("Emis (g/s/m):", args.emis, "| comprimento (m):", args.comprimento)
+    print(f"Receptores gerados: {config.numero_receptores}")
+    print(f"Arquivo de receptores: {receptor_path}")
+    print(f"Arquivo de fontes   : {source_path}")
+    print(f"Emis (g/s/m): {config.emissao_rline:g} | comprimento (m): {config.comprimento:g}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

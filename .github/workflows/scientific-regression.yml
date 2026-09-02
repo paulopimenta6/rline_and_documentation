@@ -1,0 +1,115 @@
+name: Scientific regression
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scientific-regression-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  LC_ALL: C.UTF-8
+  MPLBACKEND: Agg
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONHASHSEED: "0"
+  REGRESSION_ARTIFACT_DIR: /tmp/rline-scientific-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
+  REGRESSION_DIR: /tmp/rline-scientific-regression-${{ github.run_id }}-${{ github.run_attempt }}
+  FULL_PIPELINE_TIMEOUT_SECONDS: "18000"
+  RUN_FULL_PIPELINE: "1"
+  TZ: UTC
+
+jobs:
+  regression:
+    name: Full numerical regression
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Check out a clean tree
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify clean checkout
+        run: |
+          if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
+            git status --short
+            exit 1
+          fi
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install model build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes gfortran make patch
+
+      - name: Create isolated regression worktree
+        run: |
+          mkdir -p "$REGRESSION_ARTIFACT_DIR"
+          git worktree add --detach "$REGRESSION_DIR" "$GITHUB_SHA"
+
+      - name: Install project dependencies
+        run: bash "$REGRESSION_DIR/.github/scripts/install-python-deps.sh"
+
+      - name: Clean-build all model variants
+        env:
+          JOBS: "2"
+        run: bash "$REGRESSION_DIR/.github/scripts/build-models.sh" all
+
+      - name: Run complete scientific regression
+        working-directory: ${{ env.REGRESSION_DIR }}
+        run: bash .github/scripts/run-scientific-regression.sh
+
+      - name: Verify versioned results are unchanged
+        run: |
+          changes="$(git -C "$REGRESSION_DIR" status --porcelain=v1 \
+            --untracked-files=all -- Caso_Pipeline casos \
+            RLINE_v1_2.Example_Cases RLINE_v1_2.Evaluation_Data)"
+          if [[ -n "$changes" ]]; then
+            printf '%s\n' "$changes"
+            exit 1
+          fi
+
+      - name: Record diagnostic metadata
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/regression-metadata"
+          if [[ -d "$REGRESSION_DIR" ]]; then
+            git -C "$REGRESSION_DIR" status --short > "$RUNNER_TEMP/regression-metadata/worktree-status.txt"
+          fi
+          {
+            printf 'commit=%s\n' "$GITHUB_SHA"
+            date --utc --iso-8601=seconds
+            uname -a
+            python --version
+            gfortran --version
+            make --version
+            python -m pip freeze
+          } > "$RUNNER_TEMP/regression-metadata/environment.txt"
+          if [[ -f /tmp/rline_run.log ]]; then
+            cp /tmp/rline_run.log "$RUNNER_TEMP/regression-metadata/rline_run.log"
+          fi
+
+      - name: Upload regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scientific-regression-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/regression-metadata/
+            ${{ env.REGRESSION_ARTIFACT_DIR }}/

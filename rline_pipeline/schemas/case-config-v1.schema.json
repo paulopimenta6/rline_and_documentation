@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/paulopimenta6/rline_and_documentation/main/rline_pipeline/schemas/case-config-v1.schema.json",
+  "title": "Configuracao de caso RLINE/AERMOD v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "nome",
+    "descricao",
+    "comprimento",
+    "y_rodovia",
+    "qs",
+    "width",
+    "grid",
+    "transecto_x",
+    "periodos_esperados"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "nome": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+    },
+    "descricao": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comprimento": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "y_rodovia": {
+      "type": "number"
+    },
+    "qs": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "width": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xini", "xn", "xdelta", "yini", "yn", "ydelta"],
+      "properties": {
+        "xini": {"type": "number"},
+        "xn": {"type": "integer", "minimum": 2},
+        "xdelta": {"type": "number", "exclusiveMinimum": 0},
+        "yini": {"type": "number"},
+        "yn": {"type": "integer", "minimum": 2},
+        "ydelta": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "transecto_x": {
+      "type": "number"
+    },
+    "emis_fator": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "number", "exclusiveMinimum": 0}
+      ]
+    },
+    "periodos_esperados": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

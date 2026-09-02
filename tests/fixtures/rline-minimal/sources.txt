@@ -1,0 +1,4 @@
+Source input file
+Group X_b Y_b Z_b X_e Y_e Z_e dCL sigmaz0 lanes Emis Hw1 dw1 Hw2 dw2 Depth Wtop Wbottom
+--------------------------------------------------
+G1 0.0 0.0 1.0 10.0 0.0 1.0 0.0 1.0 1.0 1.0e-6 0.0 0.0 0.0 0.0 0.0 0.0 0.0

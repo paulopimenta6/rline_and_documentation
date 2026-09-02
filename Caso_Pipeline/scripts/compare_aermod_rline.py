@@ -1,40 +1,36 @@
-import numpy as np
-import pandas as pd
-import os
+#!/usr/bin/env python3
+"""Relatorio textual do caso historico usando o parser central validado."""
 
-base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from __future__ import annotations
 
-# ---- AERMOD: CONC_PLOT.PLT (806 receptores, conc PERIOD em ug/m3)
-aermod = pd.read_csv(f'{base}/rodada_aermod/CONC_PLOT.PLT', sep=r'\s+',
-                     names=['X', 'Y', 'conc', 'ZELEV', 'ZHILL', 'ZFLAG',
-                            'AVE', 'GRP', 'NHRS', 'NETID'],
-                     skiprows=8)
-aermod['X'] = aermod['X'].round(1)
-aermod['Y'] = aermod['Y'].round(1)
+from _pipeline_common import REFERENCE_CONFIG, load_reference
+from rline_pipeline import calculate_metrics
+from rline_pipeline.plotting import select_transect
 
-# ---- RLINE: media das 120 horas (concentracao horaria em ug/m3)
-rline = pd.read_csv(f'{base}/rodada_rline/Output_Road_Numerical.csv',
-                    skiprows=12, skipfooter=1, engine='python',
-                    header=None, usecols=[0, 1, 2, 3, 4, 5, 6],
-                    names=['Year', 'JD', 'Hour', 'X', 'Y', 'Z', 'C'])
-rline = rline[rline['C'] > -99.0]
-rline_period = rline.groupby(['X', 'Y'])['C'].mean().reset_index()
-rline_period['X'] = rline_period['X'].round(1)
-rline_period['Y'] = rline_period['Y'].round(1)
 
-# ---- Merge
-m = aermod.merge(rline_period, on=['X', 'Y'], suffixes=('_AERMOD', '_RLINE'))
-m['ratio'] = m['conc'] / m['C']
+def main() -> int:
+    _config, _aermod, _rline, _period, merged = load_reference()
+    metrics = calculate_metrics(merged, REFERENCE_CONFIG)
+    selected_x, transect = select_transect(merged, REFERENCE_CONFIG)
 
-print(f'Receptores comparados: {len(m)}')
-print(f'AERMOD max: {m["conc"].max():.1f}  |  RLINE max: {m["C"].max():.1f}')
-print(f'Media AERMOD: {m["conc"].mean():.1f}  |  Media RLINE: {m["C"].mean():.1f}')
-print(f'Ratio AERMOD/RLINE: media {m["ratio"].mean():.3f}  mediana {m["ratio"].median():.3f}')
-print(f'R^2 (log): {np.corrcoef(np.log10(m["conc"]), np.log10(m["C"]))[0,1]**2:.4f}')
-print()
-print('Top 10 receptores por concentracao AERMOD:')
-print(m.sort_values('conc', ascending=False).head(10).to_string(index=False))
-print()
-print('Transecto X=600 (mesma linha do AERMOD plot):')
-tr = m[m['X'] == 600.0].sort_values('Y')
-print(tr[['Y', 'conc', 'C', 'ratio']].to_string(index=False))
+    print(f"Receptores comparados: {int(metrics['n'])}")
+    print(f"AERMOD max: {metrics['max_aermod']:.1f}  |  RLINE max: {metrics['max_rline']:.1f}")
+    print(
+        f"Media AERMOD: {metrics['media_aermod']:.1f}  |  Media RLINE: {metrics['media_rline']:.1f}"
+    )
+    print(
+        f"Ratio AERMOD/RLINE: media {metrics['ratio_media']:.3f}  "
+        f"mediana {metrics['ratio_mediana']:.3f}"
+    )
+    print(
+        f"Correlacao log: {metrics['correlacao_log']:.4f}  |  R2(log): {metrics['r2_global']:.4f}"
+    )
+    print("\nTop 10 receptores por concentracao AERMOD:")
+    print(merged.sort_values("conc", ascending=False).head(10).to_string(index=False))
+    print(f"\nTransecto X={selected_x:g}:")
+    print(transect[["Y", "conc", "C", "ratio"]].to_string(index=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

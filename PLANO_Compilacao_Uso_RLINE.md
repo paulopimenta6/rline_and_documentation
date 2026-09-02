@@ -1,332 +1,380 @@
-# R-LINE v1.2 — Plano de Compilação e Uso
+# R-LINE v1.2 - Compilação e Uso
 
-> Este documento descreve, passo a passo, como **compilar** o modelo R-LINE a partir do código-fonte e como **usá-lo** (1) com os dados de exemplo, (2) com os dados de avaliação disponíveis e (3) com **dados reais** de um novo estudo.
-
----
+Este documento descreve as variantes RLINE existentes no repositório, o build
+isolado, a execução transacional, os casos EPA e a preparação de um estudo novo.
 
 ## 1. Pré-requisitos
 
-| Requisito | Detalhe | Como verificar |
+| Requisito | Uso | Verificação |
 |---|---|---|
-| Sistema Linux/macOS com compilador Fortran | `gfortran` (GNU Fortran) | `gfortran --version` |
-| `make` | Utilitário de build | `make --version` |
-| `pdftotext` (opcional) | Para ler os manuais PDF | `pdftotext -v` |
+| Python 3.11 ou superior | pacote, testes e regressão | `python3 --version` |
+| GNU Fortran | compilação | `gfortran --version` |
+| GNU Make | orquestração | `make --version` |
+| `patch` e `sha256sum` | preparação da variante corrigida | `patch --version` |
+| `flock` e `setsid` | lock e controle do grupo de processos | `command -v flock setsid` |
 
-O código-fonte é em **Fortran 90** e **não depende de nenhuma biblioteca externa**. Os Makefiles originais (`Makefile.ifort`, `Makefile.pgf90`) foram feitos para os compiladores Intel (`ifort`) e PGI (`pgf90`), que **não estão instalados** neste ambiente. Por isso, foi criado o **`Makefile.gfortran`** (este projeto já inclui o arquivo compilado com sucesso).
-
-> **Testado neste projeto:** Ubuntu 22.04, `gfortran 11.4.0`, `make` 4.3. Compilação sem warnings/erros. Os executáveis antigos (`RLINEv1_2.ifort.x`, `RLINEv1_2.pgf90.x`) são binários ELF de 2013 para outras plataformas e **não devem ser usados**; o `RLINEv1_2_g95.exe` e `RLINEv1_2_gfortran.exe` são para Windows.
-
----
-
-## 2. Compilação do modelo
-
-Tudo é feito dentro da pasta do código-fonte:
-`RLINE_v1_2.Source/v1_2/`
-
-### Passo 2.1 — Compilar
+Instale o pacote Python e as dependências declaradas:
 
 ```bash
-cd RLINE_v1_2.Source/v1_2
-make -f Makefile.gfortran
+python3 -m venv .venv
+. .venv/bin/activate
+bash .github/scripts/install-python-deps.sh
 ```
 
-O que o Makefile faz:
+O helper fixa `uv==0.12.2` e exporta `uv.lock` com `--frozen`. A instalação
+direta com `python -m pip install -e '.[dev]'` não congela a resolução.
 
-```make
-FC      = gfortran          # compilador
-FFLAGS  = -O1 -Wall -fbounds-check   # otimização + verificações de segurança
-EXE     = RLINEv1_2_gfortran.x
-```
+O código RLINE é Fortran e não depende de biblioteca científica externa. O
+ambiente historicamente usado pelo projeto é Ubuntu 22.04, x86-64, GNU Fortran
+11.4 e GNU Make 4.3. A CI usa Ubuntu 22.04 e registra as versões efetivamente
+instaladas.
 
-Resultado esperado:
-- 29 arquivos `.o`
-- 2 arquivos de módulo (`.mod`)
-- O executável **`RLINEv1_2_gfortran.x`**
+## 2. Variantes do RLINE
 
-> ⚠️ O programa **deve ser executado dentro da pasta onde estão os arquivos de entrada**, pois ele procura o arquivo `Line_Source_Inputs.txt` no diretório atual (não usa caminhos absolutos).
+O repositório separa explicitamente:
 
-### Passo 2.2 — Limpar (recompilar do zero)
-
-```bash
-make -f Makefile.gfortran clean
-```
-
-### Passo 2.3 — Erros comuns de compilação
-
-| Sintoma | Causa provável | Solução |
+| Variante | Origem | Finalidade |
 |---|---|---|
-| `command not found: gfortran` | Compilador não instalado | `sudo apt install gfortran` (Debian/Ubuntu) ou `brew install gcc` (macOS) |
-| `undefined reference to ...` | Ordem errada de compilação | Usar `make -f Makefile.gfortran` (ordem já correta) |
-| `module not found: Data_Structures` | Módulos não compilados antes | Rodar `make clean` e depois `make` de novo |
+| original | cópia de `RLINE_v1_2.Source/v1_2/` | reprodução e diagnóstico do upstream |
+| corrigida release | upstream + oito patches | padrão dos wrappers e das regressões |
+| corrigida debug | mesmos patches + checks de runtime | diagnóstico numérico e de memória/I/O |
 
----
+Os binários são:
 
-## 3. Como rodar o modelo (regra geral)
+```text
+build/rline-original/RLINEv1_2_gfortran.x
+build/rline-patched/RLINEv1_2_patched.x
+build/rline-patched-debug/RLINEv1_2_patched_debug.x
+```
 
-O R-LINE não recebe argumentos: ele lê o arquivo **`Line_Source_Inputs.txt`** da pasta atual. Portanto:
+Executáveis históricos rastreados nas distribuições não são selecionados pelos
+wrappers.
 
-1. Coloque os 4 arquivos de entrada **na mesma pasta**:
-   - `Line_Source_Inputs.txt`
-   - arquivo de fontes (nome livre)
-   - arquivo de receptores (nome livre)
-   - arquivo meteorológico `.sfc` (nome livre)
-2. Coloque o executável `RLINEv1_2_gfortran.x` nessa pasta (ou chame pelo caminho completo).
-3. Execute:
+## 3. Compilação
+
+Execute os builds a partir da raiz:
 
 ```bash
-./RLINEv1_2_gfortran.x
+make rline-original
+make rline-release
+make rline-debug
 ```
 
-4. Observe a saída no terminal (progresso por hora e tempo total) e confira os arquivos `.csv` gerados.
-
-### Interpretando o cabeçalho de saída
-
-O arquivo de saída começa com um resumo da execução:
-
-```
-RLINEv1_2
-SOURCE FILE: Source_Example.txt (8 Sources)
-RECEPTOR FILE: Receptor_Example.txt (196 Receptors)
-SURFACE FILE: Met_Example.sfc
-Error Limit:  1.000E-03
-Displacement Height:      5.000*z0
-Concentrations from: Plume and Meander
-Integraton option: Numerical
-```
-
-Confirme sempre que "Sources", "Receptors" e a opção de integração estão como esperado antes de analisar os números.
-
----
-
-## 4. Uso com os dados de exemplo
-
-Pasta: `RLINE_v1_2.Example_Cases/Example_case/`
-
-Este exemplo simula **duas rodovias que se cruzam** (4 pistas norte-sul = grupo G1; 4 pistas leste-oeste = grupo G2), com 196 receptores em uma grade ao redor do cruzamento, e 10 horas de meteorologia.
-
-### Passo a passo
+Ou compile AERMET, AERMOD, RLINE original e RLINE corrigido release de uma vez:
 
 ```bash
-# 1) Crie uma pasta de trabalho (não modifique os arquivos originais)
-mkdir -p ~/rline_trabalho/example
-cd ~/rline_trabalho/example
-
-# 2) Copie os arquivos do exemplo e o executável
-cp <PROJETO>/RLINE_v1_2.Example_Cases/Example_case/* .
-cp <PROJETO>/RLINE_v1_2.Source/v1_2/RLINEv1_2_gfortran.x .
-
-# 3) Rode o modelo
-./RLINEv1_2_gfortran.x
+make models
 ```
 
-> Dica: os dados originais nunca devem ser modificados. Copie tudo para uma pasta de trabalho antes de rodar. Este procedimento foi validado em `/tmp/opencode/run_example`.
+Todos os artefatos ficam em `build/`. `make clean` remove essa árvore
+reconstruível sem limpar as árvores upstream.
 
-### Resultados esperados
+### 3.1 Original
 
-| Arquivo gerado | Conteúdo |
+O alvo `rline-original` copia os 29 arquivos `.f90` e
+`Makefile.gfortran` para `build/rline-original/` e compila a cópia com:
+
+```text
+-O1 -Wall -fbounds-check
+```
+
+O snapshot em `RLINE_v1_2.Source/v1_2/` permanece sem objetos ou executáveis
+novos.
+
+### 3.2 Corrigido release e debug
+
+Antes de preparar as fontes corrigidas, o `Makefile` executa:
+
+```bash
+sha256sum --check --strict patches/rline-v1.2/UPSTREAM_SHA256.txt
+```
+
+O manifesto cobre os 29 fontes Fortran e o `Makefile.gfortran`. Depois da
+verificação, os oito patches são aplicados com `--fuzz=0` somente a uma cópia em
+`build/`:
+
+1. inicialização e validação da velocidade efetiva;
+2. geometria robusta para vento paralelo, convergência e desalocação;
+3. índice explícito de rodovia deprimida e limite analítico inicializado;
+4. validação meteorológica, de I/O e de alocação;
+5. validação do arquivo de controle;
+6. validação de fontes e receptores;
+7. verificação das saídas e das médias diárias;
+8. suporte a caminhos de arquivo longos.
+
+Release usa `-O2` com warnings e interfaces implícitas diagnosticadas. Debug usa
+`-O0 -g3`, `-fcheck=all`, backtrace, inicialização sentinela e
+`-ffpe-trap=invalid,zero,overflow`. Cada diretório recebe um `BUILD-INFO.txt`
+com variante, flags, compilador e checksums.
+
+## 4. Como executar
+
+O programa RLINE não recebe argumentos. Ele lê `Line_Source_Inputs.txt` do
+diretório corrente. O método recomendado é o wrapper:
+
+```bash
+bash scripts/run_rline.sh [diretorio_do_caso] [binario] [meteorologia.sfc]
+```
+
+Exemplo com todos os padrões do caso canônico:
+
+```bash
+make rline-release
+bash scripts/run_rline.sh
+```
+
+Sem argumentos, são usados:
+
+```text
+diretório: Caso_Pipeline/rodada_rline
+binário:   build/rline-patched/RLINEv1_2_patched.x
+```
+
+O terceiro argumento, quando informado, é copiado para o workspace como
+`ONSITE.SFC`; apenas a cópia temporária do controle é ajustada.
+
+### 4.1 Garantias do wrapper
+
+`run_rline.sh`:
+
+- aceita caminhos absolutos ou relativos à raiz, inclusive com espaços;
+- valida controle, fonte, receptores, meteorologia e caminho de saída;
+- impede duas execuções simultâneas no mesmo destino com `flock`;
+- executa em workspace exclusivo sem saídas antigas;
+- preserva o exit code do modelo;
+- encerra todo o grupo com `TERM` e `KILL` em timeout/interrupção;
+- exige assinatura e cabeçalho numérico RLINE no CSV novo;
+- substitui atomicamente cada output validado por um temporário adjacente e
+  reverte o conjunto em falha tratada de publicação ou manifesto;
+- grava log e manifesto JSON exclusivos em `<caso>/logs/`.
+
+Os vários arquivos publicados não formam um snapshot atômico único para
+leitores sem lock, e não há journal durável contra `SIGKILL` ou falha de energia.
+
+O timeout padrão é 1800 s. Ajuste-o com `RLINE_TIMEOUT_SECONDS` ou
+`RUN_TIMEOUT_SECONDS`; ajuste o período entre `TERM` e `KILL` com
+`RUN_KILL_GRACE_SECONDS`.
+
+### 4.2 Execução direta para diagnóstico
+
+Para reproduzir explicitamente o comportamento original em uma cópia
+descartável do caso:
+
+```bash
+cd /caminho/para/a-copia-do-caso
+/caminho/do/projeto/build/rline-original/RLINEv1_2_gfortran.x
+```
+
+Esse modo não fornece lock, timeout, publicação transacional, log exclusivo nem
+manifesto. Não o use sobre os diretórios de referência.
+
+## 5. Arquivos de entrada e saída
+
+O controle posicional referencia quatro itens:
+
+1. arquivo de fontes;
+2. arquivo de receptores;
+3. arquivo meteorológico `.sfc`;
+4. nome base da saída.
+
+Ele também define limite de integração, fator de altura de deslocamento,
+componentes de concentração, média diária, saída horária e opções beta.
+
+### 5.1 Fontes
+
+Cada fonte possui 18 campos:
+
+```text
+Group X_b Y_b Z_b X_e Y_e Z_e dCL sigmaz0 #lanes Emis
+      Hw1 dw1 Hw2 dw2 Depth Wtop Wbottom
+```
+
+`Emis` é a emissão por comprimento em g/(m.s) quando se deseja saída em µg/m³.
+No pipeline AERMOD/RLINE, ela deve ser coerente com:
+
+```text
+Emis_RLINE = QS_AERMOD * WIDTH_AERMOD
+```
+
+A variante corrigida rejeita números não finitos, fonte de comprimento zero,
+segunda barreira solicitada e rodovia deprimida com larguras inválidas.
+
+### 5.2 Receptores
+
+Após três linhas de cabeçalho, cada registro contém `X Y Z` em metros. A
+variante corrigida exige ao menos um receptor e coordenadas finitas.
+
+### 5.3 Meteorologia
+
+O RLINE lê o arquivo de superfície AERMET. Os campos obrigatórios incluem data e
+hora, `Hs`, `u*`, `w*`, alturas CBL/SBL, `Lmo`, `z0`, velocidade/direção do vento
+e altura de referência.
+
+Na variante corrigida, um período inválido é marcado com concentração `-99` e
+um aviso objetivo. O pipeline estrito rejeita essa sentinela quando o caso exige
+todos os períodos válidos.
+
+### 5.4 Saídas
+
+| Opção | Arquivo |
 |---|---|
-| `Output_Example_Numerical.csv` | 10 horas × 196 receptores = 1960 linhas de dados |
-| `Output_Example_Numerical_DailyAve.csv` | Médias diárias (10 horas usadas no dia) |
+| horários em um único arquivo (`A`) | nome definido no controle |
+| horários por mês (`M`) | `*_MM-YY.csv` |
+| média diária (`Y`) | `*_DailyAve.csv` |
 
-**Tempo de execução observado:** ~34 s (gfortran -O1, modo numérico).
+O CSV horário contém:
 
-As concentrações são altas (ordem de 10⁶ µg/m³) porque a emissão é **unitária** (1 g/(m·s)) — é um exemplo de funcionalidade, não um cenário realista. O importante é que **G1 e G2 saem em colunas separadas**, mostrando o efeito do agrupamento de fontes.
+```text
+Year, Julian_Day, Hour, X-Coordinate, Y-Coordinate, Z-Coordinate, C_<grupo>...
+```
 
-### Comparação entre os dois formatos de fonte
+O arquivo não possui rodapé. A vírgula final é aceita apenas como uma coluna
+vazia opcional. O parser central lê a última observação e exige o conjunto
+completo de períodos para cada receptor.
 
-O exemplo traz `Source_Example.txt` (endpoints de cada pista) e `Source_Example_dCL.txt` (centro + offset `dCL`). Para testar a equivalência, troque o nome no `Line_Source_Inputs.txt` (linha 3) por `Source_Example_dCL.txt`, rode de novo e compare os `.csv` — os resultados devem ser os mesmos.
+## 6. Example Case
 
----
+Pasta de referência:
+`RLINE_v1_2.Example_Cases/Example_case/`.
 
-## 5. Uso com os dados de avaliação (experimentos reais)
+O caso possui oito fontes em dois grupos, 196 receptores e dez períodos. As
+saídas golden têm 1960 linhas horárias e 196 linhas diárias.
 
-Pasta: `RLINE_v1_2.Evaluation_Data/Evaluation_data/`
-
-São 3 conjuntos de dados de **experimentos de campo reais**, usados para validar o modelo. Em todos, o modelo é rodado com **emissão unitária** e o fator real é aplicado no pós-processamento (por isso as saídas são adimensionais na etapa do modelo).
-
-### 5.1 CALTRANS — Rodovia CA-99 (SF6, 1989)
-
-- **Pasta:** `CALTRANS_RLINE/`
-- **Cenário:** SF6 liberado ao longo da rodovia; 4 fontes (2 norte/sul NB, 2 norte/sul SB), 7 receptores, 56 horas de meteorologia.
-- **Execução:** copie `Line_Source_Inputs.txt`, `CALTRANS99_Source.txt`, `CALTRANS99_ALLreceptors.txt`, `CALTRANS99_met.sfc` e o executável para uma pasta de trabalho e rode.
-- **Saída esperada:** `CALTRANS99_Output.csv` com 2 colunas de grupo (`C_NB`, `C_SB`), 392 linhas de dados.
-- **Tempo observado:** ~20 s.
-- **Pós-processamento (do README do experimento):**
-  1. Pegue os fatores de emissão de SF6 em `CALTRANS99_data.xlsx`.
-  2. Multiplique a concentração de cada direção pelo seu fator.
-  3. Some as duas direções (NB + SB) em cada receptor.
-  4. Compare com a concentração medida (média das 4 medições da mediana).
-
-### 5.2 Idaho Falls — SF6 com barreira (2009)
-
-- **Pasta:** `IdahoFalls_RLINE/`
-- **Cenário:** fonte de linha infinita (1 km, processada a partir de um experimento real), 7 receptores a distâncias perpendiculares, meteorologia em intervalos de 15 min (31 períodos). É o caso **sem barreira** do estudo.
-- **Execução:** copie `Line_Source_Inputs.txt`, `IF2009_Source_INF.txt`, `IF2009_Receptors_INF.txt`, `IF2009_Case1235.sfc` e o executável para uma pasta de trabalho e rode.
-- **Saída esperada:** `IF2009_Output_INF_Case1235.csv`, 217 linhas de dados.
-- **Tempo observado:** ~0,2 s (poucas fontes/receptores).
-- **Pós-processamento (do README):**
-  1. Taxas de emissão de SF6 por dia: dia 1 = 0,05 g/s; dia 2 = 0,04 g/s; dia 3 = 0,03 g/s; dia 5 = 0,03 g/s.
-  2. Emissão por metro = taxa (g/s) ÷ 54 m (comprimento da fonte).
-  3. Multiplique as concentrações unitárias por esse valor.
-  4. Divida pela densidade do SF6 (~5,34 kg/m³) → resultado em **ppb**, comparável às medições.
-
-### 5.3 Raleigh — NO perto de rodovia (2006)
-
-- **Pasta:** `Raleigh_RLINE/`
-- **Cenário:** rodovia de 8 pistas (4 de cada lado do canteiro central), 5 receptores (2 locais, repetidos), 624 períodos de meteorologia de 10 min.
-- **Execução:** copie `Line_Source_Inputs.txt`, `Ral2006_Source.txt`, `Ral2006_Receptors.txt`, `Ral_2006_NO.sfc` e o executável para uma pasta de trabalho e rode.
-- **Saída esperada:** `Ral2006_Output.csv`, 1248 linhas de dados.
-- **Tempo observado:** ~20 s.
-- **Pós-processamento (do README):**
-  1. Emissão em g/(m·s) = (volume de tráfego em veículo-milhas × fator de emissão) convertido para km, dividido pelo comprimento da fonte, pelos segundos do período e convertido km→m. Fator de emissão usado: **0,5 g/veíc/km** (Venkatram, 2007).
-  2. Multiplique as concentrações unitárias pela emissão.
-  3. Divida pela densidade do NO e converta para **ppb**.
-
-### 5.4 Validação do build (já realizada)
-
-Os três casos foram rodados com o executável compilado (`gfortran`) e comparados com os `.csv` de referência que acompanham o projeto:
-
-| Caso | Linhas | Concordância |
-|---|---|---|
-| CALTRANS | 392 | Máx. diferença relativa 0,03% (arredondamento do compilador) |
-| Idaho Falls | 217 | Idêntico |
-| Raleigh | 1248 | Idêntico |
-
-Isso confirma que o modelo compilado com gfortran reproduz os resultados oficiais.
-
----
-
-## 6. Uso com dados reais (novo estudo)
-
-Aqui está o passo a passo para preparar um cenário totalmente novo.
-
-### Passo 6.1 — Defina o sistema de coordenadas
-
-Escolha uma origem (pode ser UTM ou um sistema local centrado em um ponto de interesse). Todas as coordenadas X, Y (metros) e as alturas Z (metros, em relação ao nível local do solo) de fontes e receptores devem usar o **mesmo** sistema.
-
-### Passo 6.2 — Prepare a meteorologia (arquivo `.sfc`)
-
-É o arquivo mais difícil de gerar. Opções:
-
-- **Opção recomendada:** rodar o **AERMET** (pré-processador do AERMOD) para obter o arquivo de superfície. Instale AERMET (https://www.epa.gov/scram/air-quality-dispersion-modeling-preprocessor-models-aermet) e gere o `.sfc` no formato padrão.
-- **Alternativa:** criar o arquivo manualmente, desde que as colunas sigam a mesma ordem do AERMET. Campos usados pelo R-LINE (nesta ordem):
-  1. `Ano Mês Dia DiaJuliano Hora` (apenas repassados à saída)
-  2. `Hs` — fluxo de calor sensível (W/m²)
-  3. `u*` — velocidade de atrito (m/s)
-  4. `w*` — escala de velocidade convectiva (m/s)
-  5. `CBL` — altura da camada limite convectiva (m)
-  6. `SBL` — altura da camada limite estável (m)
-  7. `Lmo` — comprimento de Monin-Obukhov (m)
-  8. `z0` — rugosidade da superfície (m)
-  9. `Bo` — razão de Bowen
-  10. `Alb` — albedo
-  11. `Ws` — velocidade do vento (m/s)
-  12. `Wd` — direção do vento (graus)
-  13. `zref` — altura de referência do vento (m)
-  14. `Temp`, `ztemp` — temperatura e altura de referência
-
-> ⚠️ Valores `-999` = dado ausente → a saída daquele período será `-99` em todos os receptores. Use o modelo **MOST_Wind** para verificar se os perfis de vento estão coerentes.
-
-### Passo 6.3 — Prepare as fontes
-
-Para cada trecho de rodovia (link):
-
-1. **Geometria:** coordenadas de início e fim (X, Y, Z). Se preferir, use o centro da via + `dCL` para cada pista.
-2. **σz0 (coluna 9):** espalhamento vertical inicial. A orientação da EPA sugere ≈ (altura média dos veículos × 1,7) / 2,15.
-3. **Nº de faixas (coluna 10):** nº real de faixas (pode ser fracionário); usado para calcular σy0 se a opção beta 3 estiver ativa.
-4. **Emissão (coluna 11):**
-   - Direta: em **g/(m·s)**.
-   - Ou em **AADT** (veículos/dia) — a saída ficará em unidades proporcionais e você aplica o fator depois.
-   - Conversão comum (veículos → g/(m·s)):
-     ```
-     Emis (g/m/s) = [N_veículos/hora × fator_emissão (g/km)] / (1000 m/km × 3600 s/h)
-     ```
-5. **Grupo (coluna 1):** agrupe trechos que você quer somar na saída (ex.: todas as faixas de um sentido). Fontes do mesmo grupo podem ficar em qualquer ordem no arquivo.
-6. **Barreiras/depressões (colunas 12–18):** preencha com `0` se não usar. Se usar, ative a opção beta 2 e informe `Hw1`, `dw1` (barreira) ou `Depth`, `Wtop`, `Wbottom` (via deprimida).
-
-### Passo 6.4 — Prepare os receptores
-
-Liste todos os pontos de interesse (escolas, residências, monitor de qualidade do ar, grade de análise) com X, Y, Z. Ex.: monitor a 2 m de altura, residência a 1,5 m.
-
-### Passo 6.5 — Monte o `Line_Source_Inputs.txt`
-
-Copie o modelo do caso de exemplo e ajuste:
-- nomes dos 3 arquivos de entrada (linhas 3, 7, 10);
-- nome base de saída (linha 13);
-- `Error_Limit` (recomendado `1.0e-03`);
-- `fac_dispht` (altura de deslocamento = fator × z0; use `0` para deslocamento nulo);
-- opções de saída (pluma/meandro/total; média diária; horários);
-- opções beta (analítica, barreiras, largura de pista).
-
-**Orientação para valores urbanos (Grimmond & Oke, 1999):**
-
-| Forma urbana | Altura média (m) | d (m) | z0 (m) |
-|---|---|---|---|
-| Baixa/baixa densidade | 5–8 | 2–4 | 0,3–0,8 |
-| Média densidade | 7–14 | 3,5–8 | 0,7–1,5 |
-| Alta densidade | 11–20 | 7–15 | 0,8–1,5 |
-| Arranha-céus | >20 | >12 | >2,0 |
-
-### Passo 6.6 — Rode e confira
+Não execute sobre a pasta de referência. Use a regressão automatizada:
 
 ```bash
-./RLINEv1_2_gfortran.x
+make models
+python3 scripts/scientific_regression.py --case example-case
 ```
 
-Verifique no cabeçalho da saída se contagens de fontes/receptores e opções estão corretos.
+Ou copie o caso para uma pasta descartável e use `run_rline.sh` com caminho
+absoluto. `Source_Example.txt` usa endpoints; `Source_Example_dCL.txt` descreve
+a mesma geometria por centro e deslocamento.
 
-### Passo 6.7 — Pós-processamento
+## 7. Dados de avaliação EPA
 
-- Concentração (µg/m³) = saída do modelo × fator de emissão real (se você usou emissão unitária ou AADT).
-- Para comparar com medições em **ppb**, divida pela densidade do poluente (ex.: SF6 ≈ 5,34 kg/m³) e converta unidades.
+Os três conjuntos estão em
+`RLINE_v1_2.Evaluation_Data/Evaluation_data/`:
 
----
-
-## 7. Opções beta — quando usar
-
-| Opção | Quando usar | Observação |
+| Caso | Fontes/receptores/períodos | Golden |
 |---|---|---|
-| **1 — Analítica** | Cenários grandes, quando a velocidade é prioridade | Menos precisa perto da fonte e com vento quase paralelo à via |
-| **2 — Barreiras / via deprimida** | Estudar barreiras de ruído ou rodovias em corte | Requer centro + `dCL`; só uma barreira a sotavento é usada |
-| **3 — Largura da pista** | Rodovias multilane simuladas como 1 fonte | Informe a largura da faixa em metros |
+| CALTRANS | 4 fontes, 7 receptores, 56 horas | `CALTRANS99_Output.csv`, 392 linhas |
+| Idaho Falls | fonte de linha longa, 7 receptores, 31 períodos | `IF2009_Output_INF_Case1235.csv`, 217 linhas |
+| Raleigh | 8 fontes, 2 receptores, 624 registros meteorológicos | `Ral2006_Output.csv`, 1248 linhas |
 
----
+A regressão do repositório executa o RLINE corrigido em diretórios
+temporários e compara chaves ordenadas e todas as colunas de concentração:
 
-## 8. Fluxograma de trabalho resumido
-
-```
- ┌────────────┐   ┌──────────────┐   ┌─────────────┐   ┌─────────────────────┐
- │ meteorologia│   │  fontes      │   │  receptores │   │ Line_Source_Inputs  │
- │ (.sfc)      │   │  (link road) │   │  (X,Y,Z)    │   │ .txt (controle)     │
- └─────┬──────┘   └──────┬───────┘   └──────┬──────┘   └──────────┬──────────┘
-       │                 │                  │                      │
-       └─────────────────┴──────────────────┴──────────────────────┘
-                                      │
-                              ┌───────▼────────┐
-                              │ RLINE v1.2      │  ← executável (gfortran)
-                              │ (main program)  │
-                              └───────┬────────┘
-                                      │
-                      ┌───────────────┼────────────────┐
-                      │               │                │
-                Horários         Mensais        Médias diárias
-             Output_Base.csv   *_MM-YY.csv  *_DailyAve.csv
-                      │
-                      ▼
-             Pós-processamento (fator de emissão, conversão ppb)
-                      ▼
-             Concentração final vs. medições/limites
+```bash
+make scientific-regression
 ```
 
----
+| Caso | máxima diferença relativa observada | limite documentado |
+|---|---:|---:|
+| Example Case | 1,789152% | 1,9% |
+| CALTRANS | 0,523329% | 0,55% |
+| Idaho Falls | 0,088408% | 0,095% |
+| Raleigh | 0,314472% | 0,33% |
 
-## 9. Referências rápidas
+Todos estão dentro dos limites. A tolerância absoluta é `1e-6` unidade de
+saída, usada perto de golden zero. O script executa ainda a variante original
+duas vezes por padrão para diagnosticar não determinismo, mas o resultado
+original não é requisito de aprovação da variante corrigida.
 
-- Manual oficial: `RLINE_UserGuide_11-13-2013.pdf` (neste projeto).
-- GUIA de entendimento (conceitos): [`GUIA_RLINE.md`](GUIA_RLINE.md).
-- Artigos: Snyder et al. (2013), Venkatram et al. (2013), Heist et al. (2013).
+Os relatos antigos de concordância praticamente exata pertencem às execuções
+históricas da variante original. Eles continuam como histórico e não substituem
+os limites atuais da variante corrigida.
 
-> 💡 **Para o pipeline completo com o AERMOD** (AERMET → AERMOD com a fonte `RLINE`,
-> incluindo o formato exato do control file, a grade de receptores, a execução e a
-> comparação com o RLINE v1.2 standalone), consulte o
-> [`GUIA_PIPELINE_AERMET_AERMOD_RLINE.md`](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md).
+## 8. Uso com dados de um novo estudo
+
+### 8.1 Sistema de coordenadas
+
+Use o mesmo sistema métrico para fontes e receptores. Pode ser UTM ou um sistema
+local, desde que X, Y e Z sejam coerentes.
+
+### 8.2 Meteorologia
+
+Gere o `.sfc` com AERMET sempre que possível. O pipeline canônico demonstra
+Stages 1 e 2 com dados ONSITE:
+
+```bash
+make aermet
+bash scripts/run_aermet.sh <diretorio_dos_controles_e_dados>
+```
+
+Não trate apenas a existência do `.sfc` como sucesso. Verifique os relatórios do
+AERMET e os domínios físicos exigidos pelo RLINE corrigido.
+
+### 8.3 Fontes
+
+Para cada trecho:
+
+1. informe início e fim em X, Y e Z;
+2. defina `sigmaz0` e o número de faixas;
+3. converta a emissão para g/(m.s), quando aplicável;
+4. atribua grupos que devam ser somados na saída;
+5. deixe parâmetros de barreira/depressão em zero quando não forem usados.
+
+Conversão comum:
+
+```text
+Emis (g/m/s) = veículos_por_hora * fator_emissão (g/km)
+               / (1000 m/km * 3600 s/h)
+```
+
+### 8.4 Receptores
+
+Liste pontos de interesse ou uma grade com X, Y e Z. Para casos comparados ao
+AERMOD, gere os dois conjuntos a partir da mesma configuração para garantir
+identidade de coordenadas.
+
+### 8.5 Configuração versionada
+
+Para cenários do pipeline, prefira `config.json` schema v1 e gere os insumos:
+
+```bash
+python3 scripts/gerar_caso.py casos/<nome>/config.json
+bash scripts/run_caso.sh casos/<nome>
+```
+
+O gerador valida finitude, pelo menos dois pontos distintos em cada eixo, limite
+de 1.000.000 de receptores, interseção da rodovia com a grade, transecto e
+emissão. Ele produz deterministicamente o controle AERMOD, a fonte, os
+receptores, o controle RLINE e os metadados, e invalida resultados derivados
+quando um input efetivo muda.
+
+### 8.6 Pós-processamento
+
+```bash
+python3 scripts/postprocess_caso.py casos/<nome>
+python3 scripts/teste_casos.py casos/<nome>
+```
+
+O parser exige períodos e receptores completos, faz merge `one_to_one` e gera
+gráficos somente depois que o caso inteiro foi validado.
+
+## 9. Opções beta
+
+| Opção | Uso | Estado da variante corrigida |
+|---|---|---|
+| analítica | aproximação mais rápida | limite `xwd` inicializado e fonte nula rejeitada |
+| barreira/via deprimida | configurações próximas à fonte | índice de fonte corrigido; segunda barreira rejeitada |
+| largura não nula | rodovia representada por uma fonte | valor finito validado |
+
+Essas correções não transformam as opções beta em funcionalidades regulatórias.
+Registre a variante e valide o cenário específico.
+
+## 10. Verificação e referências
+
+```bash
+make test
+make quality
+make scientific-regression
+```
+
+- Conceitos e formatos: [`GUIA_RLINE.md`](GUIA_RLINE.md).
+- Pipeline AERMET/AERMOD/RLINE:
+  [`GUIA_PIPELINE_AERMET_AERMOD_RLINE.md`](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md).
+- Reprodutibilidade: [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
+- Manual distribuído: `RLINE_UserGuide_11-13-2013.pdf`.
+- Implementação e tolerâncias: `scripts/scientific_regression.py`.

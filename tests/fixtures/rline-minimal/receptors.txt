@@ -1,0 +1,5 @@
+Receptor input file
+X_coordinate Y_coordinate Z_coordinate
+--------------------------------------------------
+20.0 2.0 1.5
+20.0 -2.0 1.5
