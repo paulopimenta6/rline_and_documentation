@@ -101,10 +101,11 @@ make test
 make quality
 ```
 
-`make test` runs `pytest -m "not scientific"`; 72 tests are collected in the
-repository state dated 2026-08-27. They cover configuration, deterministic
-generation, strict parsing, real versioned cases, plots, wrapper failure modes,
-RLINE release/debug behavior, and regression comparison logic.
+`make test` runs `pytest -m "not scientific"`. The suite covers configuration,
+deterministic generation, strict parsing, real versioned cases, plots, wrapper
+failure modes, RLINE release/debug behavior, and regression comparison logic.
+The test count is intentionally not frozen in this document because it changes
+as coverage grows.
 
 `make quality` runs Ruff and validates Bash syntax. These targets do not update
 goldens.

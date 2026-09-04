@@ -6,7 +6,7 @@ SHELL := /bin/bash
 	rline-provenance-check aermet-provenance-check aermod-provenance-check \
 	model-provenance-check clean clean-aermet clean-aermod \
 	clean-rline-original rline-clean test test-rline quality \
-	scientific-regression quality-report example-data
+	scientific-regression quality-report example-data doctor docs-check
 
 PYTHON ?= python3
 BUILD_DIR := build
@@ -138,3 +138,9 @@ quality-report:
 
 example-data:
 	$(PYTHON) scripts/gerar_dados_exemplo.py
+
+doctor:
+	bash scripts/verificar_ambiente.sh
+
+docs-check:
+	$(PYTHON) -m pytest -q tests/test_documentation.py

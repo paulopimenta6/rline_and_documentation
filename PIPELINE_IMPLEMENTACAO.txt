@@ -1,6 +1,6 @@
 ================================================================================
 PIPELINE AERMET -> AERMOD/RLINE
-Especificação da implementação presente em 2026-08-27
+Especificação viva da implementação
 ================================================================================
 
 Projeto : rline_and_documentation
@@ -79,8 +79,8 @@ Comandos da raiz:
     gera a variante corrigida com checks de diagnóstico.
 
   make test
-    executa pytest -m "not scientific"; 72 testes são coletados no estado
-    documentado em 2026-08-27.
+    executa pytest -m "not scientific". A contagem não é fixada aqui porque
+    cresce conforme a cobertura evolui.
 
   make quality
     executa Ruff e bash -n nos scripts Shell rastreados ou não ignorados.

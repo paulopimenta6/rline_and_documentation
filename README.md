@@ -1,5 +1,42 @@
 # Pipeline AERMET, AERMOD e RLINE
 
+> **Nunca usou este projeto?** Comece pelo
+> **[Guia para iniciantes](docs/PRIMEIROS_PASSOS.md)**. Ele começa do zero,
+> explica o terminal e acompanha você até os primeiros gráficos.
+
+## O projeto em uma frase
+
+O projeto recebe uma descrição de rodovia e dados meteorológicos, calcula como
+um poluente pode se espalhar perto da via usando dois modelos e confere se os
+arquivos produzidos estão completos e coerentes.
+
+Pense nele como uma pequena equipe:
+
+- **AERMET é o preparador:** transforma dados meteorológicos para o formato dos
+  modelos;
+- **AERMOD e RLINE são dois calculadores:** estimam concentrações ao redor da
+  rodovia;
+- **o pipeline é o fiscal:** organiza a execução, evita misturar resultados e
+  aponta problemas;
+- **os gráficos são o mapa final:** ajudam a enxergar onde as concentrações
+  calculadas são maiores ou menores.
+
+### Escolha seu caminho
+
+| Quero… | Leia ou execute… |
+|---|---|
+| rodar um exemplo pequeno, sem conhecer o projeto | [Primeiros passos](docs/PRIMEIROS_PASSOS.md) |
+| entender que arquivos devo fornecer | [Formatos de entrada](docs/FORMATOS_DE_ENTRADA.md) |
+| entender os resultados e as métricas | [Validação científica](docs/VALIDACAO_CIENTIFICA.md) |
+| conhecer a arquitetura e a execução segura | [Guia do projeto](docs/GUIA_PROJETO.md) |
+| desenvolver ou revisar o código | [Documentação técnica](docs/README.md) |
+
+> **Importante:** o exemplo incluído usa dados sintéticos, isto é, inventados
+> de forma controlada para testar o software. Ele não representa uma cidade
+> real e não deve ser usado como estudo ambiental ou regulatório.
+
+## Visão técnica
+
 Pipeline reproduzível para modelagem de dispersão de emissões rodoviárias. O
 repositório compila AERMET v26135, AERMOD v26135 e duas variantes do RLINE v1.2,
 executa os modelos em áreas temporárias e valida os resultados antes de
@@ -26,7 +63,7 @@ Ele não grava objetos, módulos ou executáveis nas árvores de fonte. Os wrapp
 usam por padrão os binários de `build/`; os binários históricos rastreados no
 repositório não são usados implicitamente.
 
-## Início rápido
+## Início rápido para quem já usa Linux e Python
 
 Pré-requisitos: Linux, Python 3.11 ou superior, GNU Make, `gfortran`, `patch`,
 `flock` e `setsid`. Para instalar o pacote Python e as ferramentas de
@@ -78,6 +115,8 @@ rode pipelines completos em um worktree descartável, conforme
 
 | Comando | O que verifica |
 |---|---|
+| `make doctor` | mostra, sem alterar o computador, quais programas necessários estão disponíveis |
+| `make docs-check` | confere os links e comandos essenciais da documentação |
 | `make models` | builds isolados de AERMET, AERMOD, RLINE original e RLINE corrigido release |
 | `make model-provenance-check` | identidade SHA-256 dos snapshots locais AERMET, AERMOD e RLINE |
 | `make rline-debug` | RLINE corrigido com checks, inicialização sentinela e traps IEEE |
@@ -296,6 +335,9 @@ build/                           artefatos locais ignorados pelo Git
 
 ## Documentação
 
+- [`docs/PRIMEIROS_PASSOS.md`](docs/PRIMEIROS_PASSOS.md): tutorial do zero até
+  a primeira execução e os primeiros gráficos.
+- [`docs/README.md`](docs/README.md): índice por perfil e por objetivo.
 - [`GUIA_PIPELINE_AERMET_AERMOD_RLINE.md`](GUIA_PIPELINE_AERMET_AERMOD_RLINE.md):
   arquivos e etapas do pipeline canônico.
 - [`GUIA_RLINE.md`](GUIA_RLINE.md): conceitos e formatos do RLINE.

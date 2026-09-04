@@ -1,5 +1,9 @@
 # Guia do projeto RLINE/AERMET/AERMOD
 
+> Está começando agora? Siga primeiro o
+> [tutorial passo a passo](PRIMEIROS_PASSOS.md). Este guia explica a arquitetura
+> e pressupõe que você já fez ao menos uma execução do exemplo seguro.
+
 ## Finalidade e limite da alegação
 
 O repositório automatiza uma intercomparação de dispersão próxima a rodovias:

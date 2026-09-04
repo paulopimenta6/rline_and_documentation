@@ -1,5 +1,9 @@
 # Formatos de entrada
 
+> Se esta é sua primeira execução, comece pelo
+> [tutorial para iniciantes](PRIMEIROS_PASSOS.md). Volte a este documento quando
+> quiser substituir os dados de exemplo pelos seus próprios arquivos.
+
 Este documento define o contrato operacional dos arquivos aceitos pelo projeto.
 Use UTF-8 e ponto como separador decimal, salvo quando o formato Fortran do
 modelo exigir ASCII. Caminhos são relativos ao diretório da respectiva rodada.
